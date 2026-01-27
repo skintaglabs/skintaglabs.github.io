@@ -1,0 +1,83 @@
+name: Train Model
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      dataset_url:
+        description: 'URL to download dataset (optional)'
+        required: false
+        type: string
+
+jobs:
+  train:
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Download dataset
+        if: ${{ inputs.dataset_url }}
+        run: |
+          mkdir -p data
+          curl -L "${{ inputs.dataset_url }}" -o dataset.zip
+          unzip dataset.zip -d data/
+          rm dataset.zip
+
+      - name: Run training
+        id: train
+        run: |
+          python scripts/train.py 2>&1 | tee training.log
+          echo "## Training Results" >> $GITHUB_STEP_SUMMARY
+
+      - name: Generate summary
+        if: always()
+        run: |
+          echo "### Environment" >> $GITHUB_STEP_SUMMARY
+          echo "| Setting | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Runner | \`ubuntu-24.04-arm\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Python | \`$(python --version)\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| PyTorch | \`$(python -c 'import torch; print(torch.__version__)')\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### Configuration" >> $GITHUB_STEP_SUMMARY
+          echo '```yaml' >> $GITHUB_STEP_SUMMARY
+          cat configs/config.yaml >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### Training Log" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat training.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+          # Extract results table if present
+          if grep -q "RESULTS" training.log; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Results" >> $GITHUB_STEP_SUMMARY
+            sed -n '/--- RESULTS ---/,/^$/p' training.log | tail -n +2 >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-artifacts
+          path: |
+            results/cache/classifier.pkl
+            results/cache/embeddings.pt
+          retention-days: 7

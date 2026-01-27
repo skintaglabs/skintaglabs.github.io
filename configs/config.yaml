@@ -1,12 +1,16 @@
 model:
-  name: "google/siglip-so400m-patch14-384"  # MedSigLIP base
+  name: "google/siglip-so400m-patch14-384"
   embedding_dim: 1152
   image_size: 448
 
+# Low-resource settings
+extraction:
+  batch_size_cpu: 4
+  batch_size_gpu: 16
+  cache_embeddings: true
+
 training:
-  batch_size: 32
-  epochs: 10
-  learning_rate: 0.001
+  classifier: "logistic"  # logistic or mlp
   seed: 42
 
 data:

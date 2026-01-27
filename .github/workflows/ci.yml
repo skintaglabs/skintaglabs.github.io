@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Verify imports
+        run: |
+          python -c "from src.model.embeddings import EmbeddingExtractor"
+          python -c "from src.model.classifier import SklearnClassifier, ZeroShotClassifier"
+          python -c "from src.data.augmentations import get_training_transform"
+          python -c "from src.evaluation.metrics import robustness_report"
+
+      - name: Test augmentations
+        run: |
+          python -c "
+          import numpy as np
+          from src.data.augmentations import get_training_transform, get_skin_tone_augmentation
+
+          # Create dummy image
+          img = np.random.randint(0, 255, (448, 448, 3), dtype=np.uint8)
+
+          # Test augmentations run without error
+          aug = get_skin_tone_augmentation()
+          result = aug(image=img)
+          assert result['image'].shape == img.shape
+
+          transform = get_training_transform()
+          result = transform(image=img)
+          assert result['image'].shape == (3, 448, 448)
+
+          print('Augmentations OK')
+          "
+
+      - name: Test classifier
+        run: |
+          python -c "
+          import numpy as np
+          from src.model.classifier import SklearnClassifier
+
+          # Create dummy embeddings
+          X = np.random.randn(100, 1152).astype(np.float32)
+          y = np.random.randint(0, 2, 100)
+
+          clf = SklearnClassifier('logistic')
+          clf.fit(X, y)
+          acc = clf.score(X, y)
+
+          print(f'Classifier OK (train acc: {acc:.3f})')
+          "
+
+      - name: Summary
+        run: |
+          echo "## CI Passed" >> $GITHUB_STEP_SUMMARY
+          echo "All imports and unit tests succeeded on ARM runner." >> $GITHUB_STEP_SUMMARY
