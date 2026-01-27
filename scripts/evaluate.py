@@ -1,14 +1,17 @@
 """Evaluation script for robustness assessment."""
 
 import sys
+from pathlib import Path
+
+# Add project root to path before any src imports
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
 import yaml
 import pickle
 import torch
 import numpy as np
-from pathlib import Path
 from PIL import Image
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.model.embeddings import EmbeddingExtractor
 from src.data.augmentations import (
