@@ -8,8 +8,9 @@ on:
   workflow_dispatch:
     inputs:
       dataset_url:
-        description: 'URL to download dataset (optional)'
+        description: 'Dataset URL (Kaggle or direct download)'
         required: false
+        default: 'kaggle://farjanakabirsamanta/skin-cancer-dataset'
         type: string
 
 jobs:
