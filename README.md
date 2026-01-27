@@ -12,6 +12,10 @@ Robust skin lesion classification using MedSigLIP embeddings with augmentations 
 
 ```bash
 pip install -r requirements.txt
+
+# Download HAM10000 dataset from Kaggle
+pip install kaggle
+kaggle datasets download -d farjanakabirsamanta/skin-cancer-dataset -p data/ --unzip
 ```
 
 ## Usage

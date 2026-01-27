@@ -6,38 +6,13 @@ import torch
 import pickle
 import numpy as np
 from pathlib import Path
-from PIL import Image
 from sklearn.model_selection import train_test_split
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.model.embeddings import EmbeddingExtractor
 from src.model.classifier import SklearnClassifier
-
-
-def load_images_and_labels(data_dir: Path):
-    """Load images and infer labels from directory structure.
-
-    Expected structure:
-        data_dir/
-            benign/
-                image1.jpg
-            malignant/
-                image2.jpg
-    """
-    images = []
-    labels = []
-    class_names = ["benign", "malignant"]
-
-    for label_idx, class_name in enumerate(class_names):
-        class_dir = data_dir / class_name
-        if not class_dir.exists():
-            continue
-        for img_path in class_dir.glob("*.jpg"):
-            images.append(Image.open(img_path).convert("RGB"))
-            labels.append(label_idx)
-
-    return images, np.array(labels), class_names
+from src.data.loader import load_ham10000, CLASS_NAMES
 
 
 def main():
@@ -54,15 +29,28 @@ def main():
     batch_size = config["extraction"]["batch_size_gpu"] if device == "cuda" else config["extraction"]["batch_size_cpu"]
     print(f"Device: {device}, Batch size: {batch_size}")
 
-    # Load data
-    print("Loading images...")
-    images, labels, class_names = load_images_and_labels(data_dir)
-    print(f"Loaded {len(images)} images across {len(class_names)} classes")
+    # Load HAM10000 dataset
+    binary = config["data"].get("binary_classification", True)
+    print(f"Loading HAM10000 dataset (binary={binary})...")
+
+    try:
+        images, labels, metadata = load_ham10000(data_dir, binary=binary)
+        labels = np.array(labels)
+        class_names = ["benign", "malignant"] if binary else list(CLASS_NAMES.keys())
+        print(f"Loaded {len(images)} images across {len(class_names)} classes")
+        print(f"Class distribution: {dict(zip(*np.unique(labels, return_counts=True)))}")
+
+        # Save metadata for evaluation
+        metadata.to_csv(cache_dir / "metadata.csv", index=False)
+    except FileNotFoundError as e:
+        print(f"Dataset not found: {e}")
+        print("\nDownload HAM10000 from Kaggle:")
+        print("  kaggle datasets download -d farjanakabirsamanta/skin-cancer-dataset")
+        print("  unzip skin-cancer-dataset.zip -d data/")
+        return
 
     if len(images) == 0:
-        print(f"No images found. Create data directory with structure:")
-        print(f"  {data_dir}/benign/*.jpg")
-        print(f"  {data_dir}/malignant/*.jpg")
+        print("No images loaded.")
         return
 
     # Extract embeddings

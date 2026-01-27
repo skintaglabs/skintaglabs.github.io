@@ -14,6 +14,7 @@ training:
   seed: 42
 
 data:
+  binary_classification: true  # true = benign/malignant, false = 7 classes
   train_split: 0.8
   val_split: 0.1
   test_split: 0.1

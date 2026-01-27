@@ -31,14 +31,26 @@ jobs:
 
       - name: Download dataset
         if: ${{ inputs.dataset_url }}
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
         run: |
           mkdir -p data
-          curl -L "${{ inputs.dataset_url }}" -o dataset.zip
-          unzip dataset.zip -d data/
-          rm dataset.zip
+          if [[ "${{ inputs.dataset_url }}" == kaggle://* ]]; then
+            pip install -q kaggle
+            DATASET="${{ inputs.dataset_url }}"
+            DATASET="${DATASET#kaggle://}"
+            kaggle datasets download -d "$DATASET" -p data/ --unzip
+          else
+            curl -L "${{ inputs.dataset_url }}" -o dataset.zip
+            unzip dataset.zip -d data/
+            rm dataset.zip
+          fi
 
       - name: Run training
         id: train
+        env:
+          PYTHONPATH: .
         run: |
           python scripts/train.py 2>&1 | tee training.log
           echo "## Training Results" >> $GITHUB_STEP_SUMMARY
