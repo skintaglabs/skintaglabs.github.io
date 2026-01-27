@@ -19,6 +19,11 @@ from src.data.loader import load_ham10000, CLASS_NAMES
 
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--sample", type=int, default=0, help="Use only N samples (0 = all)")
+    args = parser.parse_args()
+
     config_path = Path(__file__).parent.parent / "configs" / "config.yaml"
     with open(config_path) as f:
         config = yaml.safe_load(f)
@@ -55,6 +60,16 @@ def main():
     if len(images) == 0:
         print("No images loaded.")
         return
+
+    # Sample if requested (for CI/testing)
+    if args.sample > 0 and args.sample < len(images):
+        print(f"Sampling {args.sample} images...")
+        np.random.seed(config["training"]["seed"])
+        indices = np.random.choice(len(images), args.sample, replace=False)
+        images = [images[i] for i in indices]
+        labels = labels[indices]
+        metadata = metadata.iloc[indices].reset_index(drop=True)
+        print(f"Sampled {len(images)} images")
 
     # Extract embeddings
     embedding_cache = cache_dir / "embeddings.pt"

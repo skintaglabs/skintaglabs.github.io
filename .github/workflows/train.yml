@@ -51,7 +51,12 @@ jobs:
         env:
           PYTHONPATH: .
         run: |
-          python scripts/train.py 2>&1 | tee training.log
+          # Use sample mode for auto-triggered runs, full dataset for manual
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            python scripts/train.py 2>&1 | tee training.log
+          else
+            python scripts/train.py --sample 500 2>&1 | tee training.log
+          fi
           echo "## Training Results" >> $GITHUB_STEP_SUMMARY
 
       - name: Generate summary
