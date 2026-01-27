@@ -24,6 +24,8 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Verify imports
+        env:
+          PYTHONPATH: .
         run: |
           python -c "from src.model.embeddings import EmbeddingExtractor"
           python -c "from src.model.classifier import SklearnClassifier, ZeroShotClassifier"
@@ -31,6 +33,8 @@ jobs:
           python -c "from src.evaluation.metrics import robustness_report"
 
       - name: Test augmentations
+        env:
+          PYTHONPATH: .
         run: |
           python -c "
           import numpy as np
@@ -52,6 +56,8 @@ jobs:
           "
 
       - name: Test classifier
+        env:
+          PYTHONPATH: .
         run: |
           python -c "
           import numpy as np
