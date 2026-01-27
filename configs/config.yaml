@@ -20,6 +20,6 @@ data:
   test_split: 0.1
 
 augmentation:
-  skin_tone_shift: true
   lighting_variation: true
   noise_injection: true
+  compression_artifacts: true
