@@ -32,8 +32,7 @@ jobs:
       - name: Download dataset
         if: ${{ inputs.dataset_url }}
         env:
-          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
-          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
         run: |
           mkdir -p data
           if [[ "${{ inputs.dataset_url }}" == kaggle://* ]]; then
