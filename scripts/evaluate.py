@@ -15,9 +15,9 @@ from PIL import Image
 
 from src.model.embeddings import EmbeddingExtractor
 from src.data.augmentations import (
-    get_skin_tone_augmentation,
     get_lighting_augmentation,
     get_noise_augmentation,
+    get_compression_augmentation,
 )
 from src.evaluation.metrics import robustness_report
 
@@ -63,7 +63,7 @@ def main():
     # In practice, save train/test split indices during training
     print("\nTo run full robustness evaluation:")
     print("1. Load test images")
-    print("2. Apply augmentations (skin_tone, lighting, noise)")
+    print("2. Apply augmentations (lighting, noise, compression)")
     print("3. Re-extract embeddings for each augmented set")
     print("4. Compare accuracy across conditions")
     print("\nSee notebooks/demo.ipynb for the complete workflow.")
