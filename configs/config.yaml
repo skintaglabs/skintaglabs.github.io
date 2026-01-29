@@ -29,7 +29,7 @@ data:
 
   dataset_options:
     fitzpatrick17k:
-      exclude_uncertain: true
+      exclude_non_neoplastic: false  # include non-neoplastic as benign (not cancer = benign for triage)
 
 augmentation:
   lighting_variation: true

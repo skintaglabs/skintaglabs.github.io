@@ -25,7 +25,7 @@ class EmbeddingExtractor:
             self.processor = AutoImageProcessor.from_pretrained(self.model_name)
             self.model = AutoModel.from_pretrained(
                 self.model_name,
-                dtype=torch.float16 if self.device == "cuda" else torch.float32,
+                torch_dtype=torch.float16 if self.device == "cuda" else torch.float32,
             ).to(self.device)
             self.model.eval()
         return self
@@ -58,6 +58,16 @@ class EmbeddingExtractor:
             return outputs.pooler_output.cpu()
         return outputs.last_hidden_state.mean(dim=1).cpu()
 
+    @staticmethod
+    def _load_image(item):
+        """Load a single image from a path string or return a PIL Image as-is."""
+        from PIL import Image as _Image
+        if isinstance(item, str):
+            return _Image.open(item).convert("RGB")
+        if isinstance(item, Path):
+            return _Image.open(str(item)).convert("RGB")
+        return item  # already a PIL Image
+
     @torch.no_grad()
     def extract_dataset(
         self,
@@ -69,8 +79,11 @@ class EmbeddingExtractor:
     ):
         """Extract embeddings for a full dataset with batching and caching.
 
+        Images are loaded lazily per-batch to avoid holding all PIL objects
+        in RAM simultaneously.
+
         Args:
-            images: List of PIL images
+            images: List of PIL images OR list of file path strings
             batch_size: Batch size (use 1-4 for CPU, 8-16 for GPU)
             cache_path: Path to cache embeddings (skips extraction if exists)
             transform: Optional augmentation transform (applied per-image before extraction)
@@ -96,7 +109,9 @@ class EmbeddingExtractor:
         all_embeddings = []
 
         for i in tqdm(range(0, len(images), batch_size), desc="Extracting embeddings"):
-            batch = images[i : i + batch_size]
+            batch_items = images[i : i + batch_size]
+            # Lazy load: convert paths to PIL images per-batch
+            batch = [self._load_image(item) for item in batch_items]
 
             if transform is not None:
                 augmented = []
@@ -121,6 +136,8 @@ class EmbeddingExtractor:
 
             embeddings = self.extract(batch)
             all_embeddings.append(embeddings)
+            # Free batch images immediately (important for path-based loading)
+            del batch
 
         all_embeddings = torch.cat(all_embeddings, dim=0)
 

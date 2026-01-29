@@ -38,8 +38,18 @@ An AI-powered screening tool for low-resource dermatological settings — helpin
 
 - **HAM10000**: Large, well-labeled dermoscopic dataset. The baseline.
 - **DDI**: Only dataset with balanced representation across all Fitzpatrick types. Gold standard for fairness evaluation. Biopsy-proven labels.
-- **Fitzpatrick17k**: Adds volume of clinical images with per-image Fitzpatrick annotation. The `three_partition_label` column provides reliable binary mapping without fuzzy condition name matching.
+- **Fitzpatrick17k**: Adds volume of clinical images with per-image Fitzpatrick annotation. The `three_partition_label` column provides reliable binary mapping without fuzzy condition name matching. **Non-neoplastic conditions are included as benign** (see Label Taxonomy Decision below).
 - **PAD-UFES-20**: The critical smartphone-domain dataset. Breaks the dermoscope-pathology correlation. Also provides Fitzpatrick annotations, age, gender, and rich clinical metadata.
+
+### Potential Future Dataset
+
+| Dataset | Images | Domain | Fitzpatrick | Labels | Source URL |
+|---------|--------|--------|-------------|--------|------------|
+| **BCN20000** | 18,946 (12,413 labeled) | Dermoscopic | No | 8 classes (adds SCC) | [ISIC Archive](https://api.isic-archive.com/collections/249/) |
+
+BCN20000 (Hospital Clinic Barcelona, 2010-2016) adds SCC as an explicit class and more dermoscopic volume, but does not improve our weakest areas (skin tone coverage, smartphone domain, clinical diversity). It shares the same domain as HAM10000. Publicly available via the ISIC Archive with no access request. Consider adding if more dermoscopic volume or SCC representation is needed after initial experiments.
+
+**Reference**: Hernández-Pérez et al., "BCN20000: Dermoscopic Lesions in the Wild." *Scientific Data* (2024). [DOI: 10.1038/s41597-024-03387-w](https://www.nature.com/articles/s41597-024-03387-w)
 
 ### Dataset CSV Column Reference
 
@@ -47,13 +57,41 @@ An AI-powered screening tool for low-resource dermatological settings — helpin
 - `image_id`, `dx` (diagnosis: akiec/bcc/bkl/df/mel/nv/vasc), `dx_type`, `age`, `sex`, `localization`
 
 **DDI** (`ddi_metadata.csv`):
-- `DDI_file` (image filename), `skin_tone` (values: 12, 34, 56 = grouped FST), `malignancy(malig=1)` (0/1)
+- `DDI_file` (image filename), `skin_tone` (values: 12, 34, 56 = grouped FST), `malignant` (bool True/False), `disease` (condition name)
+- Note: actual column is `malignant` (bool), not `malignancy(malig=1)` as some docs suggest. Loader handles both.
 
 **Fitzpatrick17k** (`fitzpatrick17k.csv`):
 - `md5hash` (image identifier/filename), `label` (114 conditions), `three_partition_label` (benign/malignant/non-neoplastic), `fitzpatrick` (1-6)
 
 **PAD-UFES-20** (`metadata.csv`):
 - `img_id`, `diagnostic` (ACK/BCC/MEL/NEV/SCC/SEK), `fitspatrick` (note: misspelled in original), `age`, `gender`, `region`
+
+### Label Taxonomy Decision
+
+**Decision: Binary (benign/malignant) with non-neoplastic included as benign.**
+
+Evaluated in `notebooks/label_taxonomy_eda.ipynb`. Four options were considered:
+
+| Option | Description | Total Data | Verdict |
+|--------|-------------|-----------|---------|
+| A: Binary (original) | Exclude Fitz17k non-neoplastic | ~21,500 | Loses ~48% of Fitz17k |
+| B: Ternary | Benign/malignant/non-neoplastic | ~29,500 | Only Fitz17k has 3rd class |
+| **C: Binary + non-neo as benign** | **Include non-neoplastic as benign** | **~29,500** | **Selected** |
+| D: Binary + normal skin | Add healthy skin class | ~21,500 + extra | No dataset available |
+
+**Rationale**:
+- Non-neoplastic conditions (eczema, psoriasis, infections) are **not cancer** — for a triage system asking "is this urgent?", they belong in the benign bucket
+- Recovers ~8,000 additional images from Fitzpatrick17k (48% of that dataset)
+- All four datasets already have lesion-only images; no "normal skin" dataset exists for a 3rd class
+- Confidence-based triage tiers (already in `triage.py`) handle ambiguity without extra classes
+- HAM10000's large `nv` class (6,705 melanocytic nevi) already serves as "normal mole" representation
+
+**Normal skin class not needed** because:
+- Users upload photos of specific lesions they're concerned about (pre-selected input)
+- No major public dataset includes "normal skin" images
+- An OOD detector can flag non-lesion inputs without requiring a trained class
+
+**Key references**: Daneshjou et al. (DDI, 2022), Groh et al. (Fitz17k, 2021), ISIC 2024 Challenge (binary pAUC metric validates binary triage approach).
 
 ### Downloading Data Locally
 
@@ -209,6 +247,7 @@ SkinTag/
 ├── notebooks/
 │   ├── colab_demo.ipynb               # Google Colab demo notebook
 │   ├── demo.ipynb                     # Local demo notebook
+│   ├── label_taxonomy_eda.ipynb       # Label taxonomy & data enrichment EDA
 │   ├── quick_start_with_hugging_face.ipynb
 │   ├── skin_tone_eda.ipynb            # Skin tone exploratory analysis
 │   └── skin_tone_eda_executed.ipynb
@@ -325,7 +364,7 @@ make app-docker
 
 3. **Domain-bridging augmentations** — randomly add dermoscope artifacts to phone photos and remove them from dermoscopic images. The model sees all label-domain combinations, breaking spurious correlations.
 
-4. **three_partition_label for Fitzpatrick17k** — the dataset provides a reliable benign/malignant/non-neoplastic partition. Using this instead of fuzzy string matching against 114 condition names eliminates misclassification risk.
+4. **three_partition_label for Fitzpatrick17k** — the dataset provides a reliable benign/malignant/non-neoplastic partition. Using this instead of fuzzy string matching against 114 condition names eliminates misclassification risk. **Non-neoplastic is included as benign** (not cancer = benign for triage). This recovers ~8,000 images that were previously excluded.
 
 5. **DDI skin_tone as grouped Fitzpatrick** — DDI uses groups (I-II, III-IV, V-VI) not individual types. We map to midpoints (1, 3, 5) for consistency but note the grouping in analysis.
 
