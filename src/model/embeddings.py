@@ -25,7 +25,7 @@ class EmbeddingExtractor:
             self.processor = AutoImageProcessor.from_pretrained(self.model_name)
             self.model = AutoModel.from_pretrained(
                 self.model_name,
-                torch_dtype=torch.float16 if self.device == "cuda" else torch.float32,
+                dtype=torch.float16 if self.device == "cuda" else torch.float32,
             ).to(self.device)
             self.model.eval()
         return self

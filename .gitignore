@@ -41,6 +41,13 @@ data/
 *.joblib
 *.h5
 *.onnx
+*.safetensors
+*.bin
+
+# HuggingFace / SigLIP model cache (very large)
+.cache/
+huggingface/
+*.cache
 
 # Results (keep structure, ignore outputs)
 results/*
@@ -54,6 +61,9 @@ kaggle.json
 .env
 .env.*
 *.secret
+
+# Claude Code settings
+.claude/
 
 # Large media files
 *.bmp

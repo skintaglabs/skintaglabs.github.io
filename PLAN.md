@@ -29,10 +29,10 @@ An AI-powered screening tool for low-resource dermatological settings — helpin
 
 | Dataset | Images | Domain | Fitzpatrick | Labels | Source URL |
 |---------|--------|--------|-------------|--------|------------|
-| **HAM10000** | 10,015 | Dermoscopic | No | 7 classes → binary | [Kaggle](https://www.kaggle.com/datasets/farjanakabirsamanta/skin-cancer-dataset) |
+| **HAM10000** | 10,015 | Dermoscopic | No | 7 classes -> binary | [Kaggle](https://www.kaggle.com/datasets/farjanakabirsamanta/skin-cancer-dataset) |
 | **DDI** (Stanford) | 656 | Clinical | Yes (grouped I-II, III-IV, V-VI) | Biopsy-proven benign/malignant | [Stanford AIMI](https://stanfordaimi.azurewebsites.net/datasets/35866158-8196-48d8-87bf-50dca81df965) |
-| **Fitzpatrick17k** | ~16,577 | Clinical | Yes (1-6) | 114 conditions → three_partition_label (benign/malignant/non-neoplastic) | [GitHub](https://github.com/mattgroh/fitzpatrick17k) |
-| **PAD-UFES-20** | 2,298 | Smartphone | Yes (via `fitspatrick` column) | 6 diagnostic categories → binary | [Mendeley Data](https://data.mendeley.com/datasets/zr7vgbcyr2/1) |
+| **Fitzpatrick17k** | ~16,577 | Clinical | Yes (1-6) | 114 conditions -> three_partition_label (benign/malignant/non-neoplastic) | [GitHub](https://github.com/mattgroh/fitzpatrick17k) |
+| **PAD-UFES-20** | 2,298 | Smartphone | Yes (via `fitspatrick` column) | 6 diagnostic categories -> binary | [Mendeley Data](https://data.mendeley.com/datasets/zr7vgbcyr2/1) |
 
 ### Why these four
 
@@ -44,7 +44,7 @@ An AI-powered screening tool for low-resource dermatological settings — helpin
 ### Dataset CSV Column Reference
 
 **HAM10000** (`HAM10000_metadata.csv`):
-- `image_id`, `dx` (diagnosis), `dx_type`, `age`, `sex`, `localization`
+- `image_id`, `dx` (diagnosis: akiec/bcc/bkl/df/mel/nv/vasc), `dx_type`, `age`, `sex`, `localization`
 
 **DDI** (`ddi_metadata.csv`):
 - `DDI_file` (image filename), `skin_tone` (values: 12, 34, 56 = grouped FST), `malignancy(malig=1)` (0/1)
@@ -55,22 +55,91 @@ An AI-powered screening tool for low-resource dermatological settings — helpin
 **PAD-UFES-20** (`metadata.csv`):
 - `img_id`, `diagnostic` (ACK/BCC/MEL/NEV/SCC/SEK), `fitspatrick` (note: misspelled in original), `age`, `gender`, `region`
 
+### Downloading Data Locally
+
+**Prerequisites**: Set Kaggle credentials as environment variables (or in `.env`):
+```bash
+export KAGGLE_USERNAME=your_username
+export KAGGLE_KEY=your_api_key
+```
+
+**HAM10000** (automated via Kaggle):
+```bash
+pip install kaggle
+kaggle datasets download -d farjanakabirsamanta/skin-cancer-dataset -p data/ --unzip
+# Or use: make data
+```
+
+**DDI** (requires Stanford AIMI access):
+```bash
+# 1. Request access at: https://stanfordaimi.azurewebsites.net/datasets/35866158-8196-48d8-87bf-50dca81df965
+# 2. Once approved, download and extract to:
+mkdir -p data/ddi/images
+# Place ddi_metadata.csv in data/ddi/
+# Place all images in data/ddi/images/
+```
+
+**Fitzpatrick17k** (CSV from GitHub, images via URLs in CSV):
+```bash
+mkdir -p data/fitzpatrick17k/images
+# Download CSV:
+curl -L https://raw.githubusercontent.com/mattgroh/fitzpatrick17k/main/fitzpatrick17k.csv \
+  -o data/fitzpatrick17k/fitzpatrick17k.csv
+# Download images using the URLs in the CSV (see scripts/download_datasets.py)
+python download_datasets.py --dataset fitzpatrick17k
+```
+
+**PAD-UFES-20** (Mendeley Data):
+```bash
+mkdir -p data/pad_ufes/images
+# 1. Download from: https://data.mendeley.com/datasets/zr7vgbcyr2/1
+# 2. Also available on Kaggle:
+kaggle datasets download -d mahdavi1202/skin-cancer -p data/pad_ufes/ --unzip
+# Place metadata.csv in data/pad_ufes/
+# Place all images in data/pad_ufes/images/
+```
+
+### Downloading the SigLIP Model Locally
+
+The SigLIP backbone (`google/siglip-so400m-patch14-384`) is ~1.6GB and downloaded automatically from HuggingFace on first training run. To pre-download:
+
+```bash
+python -c "
+from transformers import AutoModel, AutoImageProcessor
+model_name = 'google/siglip-so400m-patch14-384'
+print('Downloading SigLIP processor...')
+AutoImageProcessor.from_pretrained(model_name)
+print('Downloading SigLIP model...')
+AutoModel.from_pretrained(model_name)
+print('Done — model cached in ~/.cache/huggingface/')
+"
+```
+
+The model is cached at `~/.cache/huggingface/hub/` and is gitignored. To set a custom cache location:
+```bash
+export HF_HOME=/path/to/your/cache
+```
+
 ### Local Data Layout
 
 ```
-data/
-├── HAM10000_metadata.csv          # or data/Skin Cancer/...
-├── HAM10000_images_part_1/
-├── HAM10000_images_part_2/
+data/                                  # gitignored — all datasets stored locally
+├── HAM10000_metadata.csv
+├── Skin Cancer/
+│   └── Skin Cancer/                   # Kaggle nests one level deep
+│       └── *.jpg                      # 10,015 dermoscopic images
 ├── ddi/
 │   ├── ddi_metadata.csv
 │   └── images/
+│       └── *.jpg                      # 656 clinical images
 ├── fitzpatrick17k/
 │   ├── fitzpatrick17k.csv
 │   └── images/
+│       └── *.jpg                      # ~16,577 clinical images
 └── pad_ufes/
     ├── metadata.csv
     └── images/
+        └── *.png                      # 2,298 smartphone images
 ```
 
 ---
@@ -80,8 +149,8 @@ data/
 | Model | Type | Architecture | How it works |
 |-------|------|-------------|-------------|
 | **Naive baseline** | Majority class | Always predicts "benign" | No training. Sets floor for accuracy. |
-| **Classical ML** | Logistic Regression | StandardScaler → LogisticRegression on 1152-d SigLIP embeddings | sklearn, sub-second training |
-| **Deep learning** | Fine-tuned MLP head | 2-layer MLP (1152→256→2) with dropout+BatchNorm on SigLIP embeddings | PyTorch, early stopping, class-weighted loss |
+| **Classical ML** | Logistic Regression | StandardScaler -> LogisticRegression on 1152-d SigLIP embeddings | sklearn, sub-second training |
+| **Deep learning** | Fine-tuned MLP head | 2-layer MLP (1152->256->2) with dropout+BatchNorm on SigLIP embeddings | PyTorch, early stopping, class-weighted loss |
 | **End-to-end** (optional) | Fine-tuned SigLIP | Unfreezes last N transformer layers + classification head | GPU required, best accuracy for deployment |
 
 The **deployed model** will be whichever performs best on the cross-domain evaluation, ranked by **F1 macro** (the primary metric for imbalanced dermatology data).
@@ -122,37 +191,72 @@ This means models trained naively will have significantly lower sensitivity (mis
 
 ---
 
-## Architecture
+## Project Structure
 
 ```
-data/                              # Local datasets (gitignored)
-configs/config.yaml                # All configuration
-src/
-├── data/
-│   ├── schema.py                  # SkinSample dataclass (unified schema)
-│   ├── loader.py                  # load_multi_dataset() orchestrator
-│   ├── datasets/                  # Per-dataset adapters (HAM10000, DDI, Fitz17k, PAD-UFES)
-│   ├── sampler.py                 # Domain + Fitzpatrick balanced weights
-│   ├── augmentations.py           # Training/eval transforms + domain bridging
-│   └── dermoscope_aug.py          # Custom dermoscope artifact augmentations
-├── model/
-│   ├── embeddings.py              # SigLIP embedding extraction + caching
-│   ├── classifier.py              # SklearnClassifier (logistic/MLP)
-│   ├── baseline.py                # MajorityClass + RandomWeighted baselines
-│   ├── deep_classifier.py         # DeepClassifier (head) + EndToEndClassifier
-│   └── triage.py                  # TriageSystem with urgency tiers
-├── evaluation/
-│   └── metrics.py                 # F1, accuracy, AUC, per-group, equalized odds
-scripts/
-├── train.py                       # Main training (supports --multi-dataset --model all)
-├── train_all_models.py            # Train + compare all 3 models
-├── evaluate.py                    # Full fairness evaluation
-└── evaluate_cross_domain.py       # Leave-one-domain-out experiment
-app/
-├── main.py                        # FastAPI backend
-├── templates/index.html           # Polished frontend
-└── static/                        # Static assets
-Dockerfile                         # Containerized deployment
+SkinTag/
+├── .github/
+│   └── workflows/
+│       ├── ci.yml                     # CI pipeline
+│       └── train.yml                  # Training workflow
+├── app/
+│   ├── main.py                        # FastAPI backend (upload -> SigLIP -> triage)
+│   └── templates/
+│       └── index.html                 # Polished dark-theme frontend with risk gauge
+├── configs/
+│   └── config.yaml                    # All configuration (data, training, triage thresholds)
+├── data/                              # gitignored — local datasets
+├── notebooks/
+│   ├── colab_demo.ipynb               # Google Colab demo notebook
+│   ├── demo.ipynb                     # Local demo notebook
+│   ├── quick_start_with_hugging_face.ipynb
+│   ├── skin_tone_eda.ipynb            # Skin tone exploratory analysis
+│   └── skin_tone_eda_executed.ipynb
+├── results/                           # gitignored — cached embeddings, models, metrics
+│   └── cache/
+│       ├── embeddings.pt              # Cached SigLIP embeddings
+│       ├── classifier.pkl             # Default trained model
+│       ├── classifier_logistic.pkl    # Logistic regression model
+│       ├── classifier_deep.pkl        # Deep MLP head model
+│       ├── classifier_baseline.pkl    # Majority class baseline
+│       ├── finetuned_model/           # End-to-end fine-tuned SigLIP (if trained)
+│       ├── metadata.csv               # Full dataset metadata
+│       ├── test_metadata.csv          # Test split metadata
+│       └── training_results.json      # Model comparison metrics
+├── scripts/
+│   ├── train.py                       # Main training (--multi-dataset --model all --domain-balance)
+│   ├── train_all_models.py            # Train + compare all model types
+│   ├── evaluate.py                    # Full fairness evaluation report
+│   └── evaluate_cross_domain.py       # Leave-one-domain-out experiment
+├── src/
+│   ├── data/
+│   │   ├── schema.py                  # SkinSample dataclass (unified schema for all datasets)
+│   │   ├── loader.py                  # load_ham10000(), load_multi_dataset() orchestrator
+│   │   ├── datasets/
+│   │   │   ├── __init__.py            # DATASET_LOADERS registry
+│   │   │   ├── ham10000.py            # HAM10000 adapter -> SkinSample
+│   │   │   ├── ddi.py                 # DDI adapter (skin_tone -> Fitzpatrick mapping)
+│   │   │   ├── fitzpatrick17k.py      # Fitz17k adapter (three_partition_label -> binary)
+│   │   │   └── pad_ufes.py            # PAD-UFES adapter (smartphone domain)
+│   │   ├── sampler.py                 # Domain + Fitzpatrick balanced sampling weights
+│   │   ├── augmentations.py           # Training/eval transforms + domain bridging
+│   │   └── dermoscope_aug.py          # Custom dermoscope artifact augmentations
+│   ├── model/
+│   │   ├── embeddings.py              # SigLIP embedding extraction + caching
+│   │   ├── classifier.py              # SklearnClassifier (logistic regression)
+│   │   ├── baseline.py                # MajorityClassBaseline + RandomWeightedBaseline
+│   │   ├── deep_classifier.py         # DeepClassifier (MLP head) + EndToEndClassifier
+│   │   └── triage.py                  # TriageSystem with urgency tiers + disclaimers
+│   └── evaluation/
+│       └── metrics.py                 # F1, accuracy, AUC, per-group, equalized odds
+├── .env                               # gitignored — Kaggle credentials, env vars
+├── .gitignore
+├── Dockerfile                         # Containerized deployment
+├── LICENSE
+├── Makefile                           # Build targets (install, data, train, app)
+├── PLAN.md                            # This file
+├── README.md
+└── requirements.txt
 ```
 
 ---
@@ -161,9 +265,18 @@ Dockerfile                         # Containerized deployment
 
 ### Setup
 ```bash
-make install                       # Install dependencies
-make data                          # Download HAM10000
-# Manually download DDI, Fitzpatrick17k, PAD-UFES (see Makefile for URLs)
+# Install Python dependencies
+pip install -r requirements.txt
+# Or:
+make install
+
+# Download HAM10000 (requires Kaggle API credentials)
+make data
+
+# Download other datasets (see "Downloading Data Locally" above)
+# DDI: requires Stanford AIMI access request
+# Fitzpatrick17k: CSV from GitHub, images from URLs
+# PAD-UFES-20: from Mendeley Data or Kaggle
 ```
 
 ### Training
@@ -171,13 +284,16 @@ make data                          # Download HAM10000
 # Single dataset (HAM10000), logistic regression
 python scripts/train.py
 
+# All 3 models on HAM10000
+python scripts/train.py --model all
+
 # Multi-dataset, all models, domain+Fitzpatrick balanced
 python scripts/train.py --multi-dataset --domain-balance --model all
 
-# Train + compare all 3 model types
+# Train + compare all model types
 python scripts/train_all_models.py
 
-# Quick smoke test
+# Quick smoke test (500 samples)
 python scripts/train.py --sample 500
 ```
 
@@ -203,7 +319,7 @@ make app-docker
 
 ## Key Design Decisions
 
-1. **F1 macro as primary metric** — accuracy is misleading on class-imbalanced data (70% benign → 70% accuracy by always predicting benign). F1 macro treats both classes equally.
+1. **F1 macro as primary metric** — accuracy is misleading on class-imbalanced data (70% benign -> 70% accuracy by always predicting benign). F1 macro treats both classes equally.
 
 2. **Fitzpatrick-balanced sampling, not oversampling** — oversampling duplicates minority images (overfitting risk). Balanced sample weights upweight minority samples in the loss function without duplication.
 
@@ -216,3 +332,5 @@ make app-docker
 6. **Triage tiers, not probabilities** — users don't understand "0.47 probability of malignancy." They understand "moderate concern — schedule a dermatology appointment within 2-4 weeks."
 
 7. **Medical disclaimer everywhere** — this is a screening aid, not a diagnosis. Every output includes a prominent disclaimer. The app makes this impossible to miss.
+
+8. **SigLIP (google/siglip-so400m-patch14-384) as backbone** — 400M parameter vision-language model producing 1152-d embeddings. Strong zero-shot medical image understanding. Model is cached locally via HuggingFace Hub (~1.6GB) and gitignored.
