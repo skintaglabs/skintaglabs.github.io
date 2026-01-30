@@ -174,7 +174,14 @@ def get_demographic_groups(metadata: pd.DataFrame):
 
     # Fitzpatrick skin type (new: multi-dataset)
     if "fitzpatrick" in metadata.columns:
-        groups["fitzpatrick"] = metadata["fitzpatrick"].fillna("unknown").astype(str).values
+        fitz = metadata["fitzpatrick"].copy()
+        # Normalize to clean strings: 2.0 -> "2", NaN -> "unknown"
+        def _norm_fitz(v):
+            try:
+                return str(int(float(v)))
+            except (ValueError, TypeError):
+                return "unknown"
+        groups["fitzpatrick"] = np.array([_norm_fitz(v) for v in fitz])
 
     # Domain (new: multi-dataset)
     if "domain" in metadata.columns:

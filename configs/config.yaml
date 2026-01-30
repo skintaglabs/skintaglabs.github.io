@@ -11,6 +11,7 @@ extraction:
 
 training:
   classifier: "logistic"  # logistic, mlp, deep
+  condition_classifier: true  # also train condition estimation (10-class)
   seed: 42
 
 data:
@@ -26,6 +27,7 @@ data:
     - ddi
     - fitzpatrick17k
     - pad_ufes
+    - bcn20000
 
   dataset_options:
     fitzpatrick17k:

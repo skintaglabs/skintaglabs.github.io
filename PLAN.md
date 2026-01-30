@@ -1,4 +1,4 @@
-# SkinTag: Multi-Dataset, Domain-Robust, Fairness-Aware Skin Lesion Triage
+# SkinTag: Multi-Dataset, Domain-Robust, Fairness-Aware Skin Lesion Triage (Dual Classification)
 
 ## Vision
 
@@ -16,7 +16,7 @@ An AI-powered screening tool for low-resource dermatological settings — helpin
 
 ## Approach
 
-- **Multi-dataset training** across four complementary datasets spanning dermoscopic, clinical, and smartphone domains
+- **Multi-dataset training** across five complementary datasets spanning dermoscopic, clinical, and smartphone domains
 - **Domain-bridging augmentations** that add/remove dermoscope artifacts so the model can't cheat
 - **Fitzpatrick-balanced sampling** that explicitly upweights under-represented darker skin tones
 - **Three modeling approaches** (naive baseline, classical ML, deep learning) for rigorous comparison
@@ -33,23 +33,15 @@ An AI-powered screening tool for low-resource dermatological settings — helpin
 | **DDI** (Stanford) | 656 | Clinical | Yes (grouped I-II, III-IV, V-VI) | Biopsy-proven benign/malignant | [Stanford AIMI](https://stanfordaimi.azurewebsites.net/datasets/35866158-8196-48d8-87bf-50dca81df965) |
 | **Fitzpatrick17k** | ~16,577 | Clinical | Yes (1-6) | 114 conditions -> three_partition_label (benign/malignant/non-neoplastic) | [GitHub](https://github.com/mattgroh/fitzpatrick17k) |
 | **PAD-UFES-20** | 2,298 | Smartphone | Yes (via `fitspatrick` column) | 6 diagnostic categories -> binary | [Mendeley Data](https://data.mendeley.com/datasets/zr7vgbcyr2/1) |
+| **BCN20000** | 18,946 (12,413 labeled) | Dermoscopic | No | 8 classes (adds SCC) | [ISIC Archive](https://api.isic-archive.com/collections/249/) |
 
-### Why these four
+### Why these five
 
 - **HAM10000**: Large, well-labeled dermoscopic dataset. The baseline.
 - **DDI**: Only dataset with balanced representation across all Fitzpatrick types. Gold standard for fairness evaluation. Biopsy-proven labels.
 - **Fitzpatrick17k**: Adds volume of clinical images with per-image Fitzpatrick annotation. The `three_partition_label` column provides reliable binary mapping without fuzzy condition name matching. **Non-neoplastic conditions are included as benign** (see Label Taxonomy Decision below).
 - **PAD-UFES-20**: The critical smartphone-domain dataset. Breaks the dermoscope-pathology correlation. Also provides Fitzpatrick annotations, age, gender, and rich clinical metadata.
-
-### Potential Future Dataset
-
-| Dataset | Images | Domain | Fitzpatrick | Labels | Source URL |
-|---------|--------|--------|-------------|--------|------------|
-| **BCN20000** | 18,946 (12,413 labeled) | Dermoscopic | No | 8 classes (adds SCC) | [ISIC Archive](https://api.isic-archive.com/collections/249/) |
-
-BCN20000 (Hospital Clinic Barcelona, 2010-2016) adds SCC as an explicit class and more dermoscopic volume, but does not improve our weakest areas (skin tone coverage, smartphone domain, clinical diversity). It shares the same domain as HAM10000. Publicly available via the ISIC Archive with no access request. Consider adding if more dermoscopic volume or SCC representation is needed after initial experiments.
-
-**Reference**: Hernández-Pérez et al., "BCN20000: Dermoscopic Lesions in the Wild." *Scientific Data* (2024). [DOI: 10.1038/s41597-024-03387-w](https://www.nature.com/articles/s41597-024-03387-w)
+- **BCN20000**: Hospital Clinic Barcelona (2010-2016). Adds SCC as an explicit class and additional dermoscopic volume (~12k labeled images). Publicly available via the ISIC Archive with no access request. **Reference**: Hernández-Pérez et al., "BCN20000: Dermoscopic Lesions in the Wild." *Scientific Data* (2024). [DOI: 10.1038/s41597-024-03387-w](https://www.nature.com/articles/s41597-024-03387-w)
 
 ### Dataset CSV Column Reference
 
@@ -65,6 +57,9 @@ BCN20000 (Hospital Clinic Barcelona, 2010-2016) adds SCC as an explicit class an
 
 **PAD-UFES-20** (`metadata.csv`):
 - `img_id`, `diagnostic` (ACK/BCC/MEL/NEV/SCC/SEK), `fitspatrick` (note: misspelled in original), `age`, `gender`, `region`
+
+**BCN20000** (`bcn20000_metadata.csv`):
+- `image` or `isic_id` (image identifier), `diagnosis` (melanoma/basal cell carcinoma/squamous cell carcinoma/actinic keratosis/melanocytic nevus/seborrheic keratosis/dermatofibroma/vascular lesion), `age`, `sex`, `anatom_site_general`
 
 ### Label Taxonomy Decision
 
@@ -82,7 +77,7 @@ Evaluated in `notebooks/label_taxonomy_eda.ipynb`. Four options were considered:
 **Rationale**:
 - Non-neoplastic conditions (eczema, psoriasis, infections) are **not cancer** — for a triage system asking "is this urgent?", they belong in the benign bucket
 - Recovers ~8,000 additional images from Fitzpatrick17k (48% of that dataset)
-- All four datasets already have lesion-only images; no "normal skin" dataset exists for a 3rd class
+- All five datasets already have lesion-only images; no "normal skin" dataset exists for a 3rd class
 - Confidence-based triage tiers (already in `triage.py`) handle ambiguity without extra classes
 - HAM10000's large `nv` class (6,705 melanocytic nevi) already serves as "normal mole" representation
 
@@ -92,6 +87,32 @@ Evaluated in `notebooks/label_taxonomy_eda.ipynb`. Four options were considered:
 - An OOD detector can flag non-lesion inputs without requiring a trained class
 
 **Key references**: Daneshjou et al. (DDI, 2022), Groh et al. (Fitz17k, 2021), ISIC 2024 Challenge (binary pAUC metric validates binary triage approach).
+
+### Dual Classification Targets
+
+The pipeline trains **two sets of classifiers**:
+
+1. **Binary triage** (benign=0, malignant=1) — the primary output for user-facing triage.
+2. **Condition estimation** (10 categories) — secondary output showing the most likely specific condition.
+
+Both targets are derived from a unified condition taxonomy defined in `src/data/taxonomy.py`.
+
+### Unified Condition Taxonomy (10 Categories)
+
+| ID | Condition | Binary | Present In |
+|----|-----------|--------|------------|
+| 0 | Melanoma | Malignant | All 5 |
+| 1 | Basal Cell Carcinoma | Malignant | All 5 |
+| 2 | Squamous Cell Carcinoma | Malignant | PAD, BCN, DDI, Fitz |
+| 3 | Actinic Keratosis | Malignant | HAM, PAD, BCN, Fitz |
+| 4 | Melanocytic Nevus | Benign | All 5 |
+| 5 | Seborrheic Keratosis | Benign | All 5 |
+| 6 | Dermatofibroma | Benign | HAM, BCN, DDI, Fitz |
+| 7 | Vascular Lesion | Benign | HAM, BCN |
+| 8 | Non-Neoplastic | Benign | Fitz, DDI |
+| 9 | Other/Unknown | Benign | All (catch-all) |
+
+Each dataset's raw labels are mapped to this taxonomy via per-dataset dictionaries (HAM10000, PAD-UFES, BCN20000) or keyword matchers (DDI, Fitzpatrick17k). The binary label is then derived from `CONDITION_BINARY[condition]`.
 
 ### Downloading Data Locally
 
@@ -137,6 +158,14 @@ kaggle datasets download -d mahdavi1202/skin-cancer -p data/pad_ufes/ --unzip
 # Place all images in data/pad_ufes/images/
 ```
 
+**BCN20000** (ISIC Archive — no access request needed):
+```bash
+mkdir -p data/bcn20000/images
+# Download from: https://api.isic-archive.com/collections/249/
+# Place bcn20000_metadata.csv in data/bcn20000/
+# Place all images in data/bcn20000/images/
+```
+
 ### Downloading the SigLIP Model Locally
 
 The SigLIP backbone (`google/siglip-so400m-patch14-384`) is ~1.6GB and downloaded automatically from HuggingFace on first training run. To pre-download:
@@ -174,10 +203,14 @@ data/                                  # gitignored — all datasets stored loca
 │   ├── fitzpatrick17k.csv
 │   └── images/
 │       └── *.jpg                      # ~16,577 clinical images
-└── pad_ufes/
-    ├── metadata.csv
+├── pad_ufes/
+│   ├── metadata.csv
+│   └── images/
+│       └── *.png                      # 2,298 smartphone images
+└── bcn20000/
+    ├── bcn20000_metadata.csv
     └── images/
-        └── *.png                      # 2,298 smartphone images
+        └── ISIC_*.jpg                 # ~12,413 labeled dermoscopic images
 ```
 
 ---
@@ -192,6 +225,46 @@ data/                                  # gitignored — all datasets stored loca
 | **End-to-end** (optional) | Fine-tuned SigLIP | Unfreezes last N transformer layers + classification head | GPU required, best accuracy for deployment |
 
 The **deployed model** will be whichever performs best on the cross-domain evaluation, ranked by **F1 macro** (the primary metric for imbalanced dermatology data).
+
+### Full Pipeline Results (47,277 samples, 5 datasets)
+
+**Binary Classification (benign/malignant):**
+
+| Model | Train Acc | Test Acc | F1 Macro | F1 Malignant | AUC |
+|-------|-----------|----------|----------|--------------|-----|
+| Baseline | 0.791 | 0.791 | 0.442 | 0.000 | 0.500 |
+| Logistic | 0.838 | 0.840 | 0.792 | 0.660 | 0.922 |
+| **Deep MLP** | **0.913** | **0.908** | **0.878** | **0.753** | **0.980** |
+
+**Best binary model: Deep MLP** (F1 macro=0.878, AUC=0.980)
+
+**Fairness (Deep MLP):**
+- Fitzpatrick equalized odds gap: sensitivity=0.051, specificity=0.212
+- Domain equalized odds gap: sensitivity=0.036, specificity=0.110
+
+**Condition Classification (10-class):**
+
+| Model | Test Acc | F1 Macro |
+|-------|----------|----------|
+| Logistic | 0.684 | 0.596 |
+| Deep MLP | 0.680 | 0.631 |
+
+**Per-condition F1 (logistic, evaluation split):**
+
+| Condition | F1 | n |
+|-----------|-----|---|
+| Melanoma | 0.667 | 329 |
+| Basal Cell Carcinoma | 0.745 | 1,174 |
+| Squamous Cell Carcinoma | 0.673 | 147 |
+| Actinic Keratosis | 0.755 | 220 |
+| Melanocytic Nevus | 0.847 | 2,677 |
+| Seborrheic Keratosis | 0.584 | 546 |
+| Dermatofibroma | 0.816 | 85 |
+| Vascular Lesion | 0.864 | 66 |
+| Non-Neoplastic | 0.707 | 1,258 |
+| Other/Unknown | 0.707 | 2,954 |
+
+**Backbone**: google/siglip-so400m-patch14-384 (878M params, 1152-d embeddings)
 
 ---
 
@@ -253,15 +326,20 @@ SkinTag/
 │   └── skin_tone_eda_executed.ipynb
 ├── results/                           # gitignored — cached embeddings, models, metrics
 │   └── cache/
-│       ├── embeddings.pt              # Cached SigLIP embeddings
-│       ├── classifier.pkl             # Default trained model
-│       ├── classifier_logistic.pkl    # Logistic regression model
-│       ├── classifier_deep.pkl        # Deep MLP head model
-│       ├── classifier_baseline.pkl    # Majority class baseline
+│       ├── embeddings.pt              # Cached SigLIP embeddings (~46k samples)
+│       ├── classifier.pkl             # Default binary model (for app)
+│       ├── classifier_baseline.pkl    # Majority class baseline (binary)
+│       ├── classifier_logistic.pkl    # Logistic regression (binary)
+│       ├── classifier_deep.pkl        # Deep MLP (binary)
+│       ├── classifier_condition.pkl   # Default condition model (10-class)
+│       ├── classifier_condition_logistic.pkl  # Logistic regression (condition)
+│       ├── classifier_condition_deep.pkl      # Deep MLP (condition)
 │       ├── finetuned_model/           # End-to-end fine-tuned SigLIP (if trained)
 │       ├── metadata.csv               # Full dataset metadata
 │       ├── test_metadata.csv          # Test split metadata
-│       └── training_results.json      # Model comparison metrics
+│       ├── training_results.json      # Binary training metrics
+│       ├── condition_training_results.json    # Condition training metrics
+│       └── evaluation_results.json    # Full evaluation (both targets)
 ├── scripts/
 │   ├── train.py                       # Main training (--multi-dataset --model all --domain-balance)
 │   ├── train_all_models.py            # Train + compare all model types
@@ -270,13 +348,15 @@ SkinTag/
 ├── src/
 │   ├── data/
 │   │   ├── schema.py                  # SkinSample dataclass (unified schema for all datasets)
+│   │   ├── taxonomy.py                # Unified condition taxonomy (10 categories) + per-dataset maps
 │   │   ├── loader.py                  # load_ham10000(), load_multi_dataset() orchestrator
 │   │   ├── datasets/
-│   │   │   ├── __init__.py            # DATASET_LOADERS registry
+│   │   │   ├── __init__.py            # DATASET_LOADERS registry (5 datasets)
 │   │   │   ├── ham10000.py            # HAM10000 adapter -> SkinSample
 │   │   │   ├── ddi.py                 # DDI adapter (skin_tone -> Fitzpatrick mapping)
 │   │   │   ├── fitzpatrick17k.py      # Fitz17k adapter (three_partition_label -> binary)
-│   │   │   └── pad_ufes.py            # PAD-UFES adapter (smartphone domain)
+│   │   │   ├── pad_ufes.py            # PAD-UFES adapter (smartphone domain)
+│   │   │   └── bcn20000.py            # BCN20000 adapter (dermoscopic, adds SCC)
 │   │   ├── sampler.py                 # Domain + Fitzpatrick balanced sampling weights
 │   │   ├── augmentations.py           # Training/eval transforms + domain bridging
 │   │   └── dermoscope_aug.py          # Custom dermoscope artifact augmentations
@@ -323,12 +403,12 @@ python run_pipeline.py --app-only
 ```
 
 The pipeline:
-1. **Checks environment** — verifies packages, data, model cache
+1. **Checks environment** — verifies packages, 5 datasets, model cache
 2. **Loads data** — reads metadata and image paths (no images in RAM)
 3. **Extracts embeddings** — streams images from disk per-batch through SigLIP
-4. **Trains models** — baseline, logistic regression, deep MLP
-5. **Evaluates** — fairness metrics, per-Fitzpatrick sensitivity, equalized odds
-6. **Launches web app** — FastAPI triage interface
+4. **Trains models** — binary (baseline, logistic, deep MLP) + condition (logistic, deep MLP)
+5. **Evaluates** — fairness metrics, per-Fitzpatrick sensitivity, equalized odds, condition accuracy
+6. **Launches web app** — FastAPI triage + condition estimation interface
 
 Each stage is wrapped in error handling. If a stage fails, the pipeline logs a warning and continues. Internet is only needed on the first run (SigLIP model download).
 

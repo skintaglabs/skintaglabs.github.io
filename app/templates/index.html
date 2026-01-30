@@ -2,763 +2,925 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SkinTag — AI Skin Lesion Screening</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SkinTag — AI Dermatology Screening</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #0f1117;
-            --surface: #1a1d27;
-            --surface-hover: #242836;
-            --border: #2d3142;
-            --text: #e4e4e7;
-            --text-muted: #8b8fa3;
-            --accent: #6366f1;
-            --accent-light: #818cf8;
-            --green: #22c55e;
-            --yellow: #eab308;
-            --red: #ef4444;
-            --green-bg: rgba(34,197,94,0.1);
-            --yellow-bg: rgba(234,179,8,0.1);
-            --red-bg: rgba(239,68,68,0.1);
+            --bg: #f6f4f0;
+            --bg-warm: #ece8e1;
+            --surface: #ffffff;
+            --surface-alt: #faf9f7;
+            --border: #e2ddd5;
+            --border-strong: #c9c2b8;
+            --text: #1a1714;
+            --text-secondary: #5c564d;
+            --text-muted: #8a8279;
+            --accent: #1a1714;
+            --accent-warm: #6b4c2a;
+            --serif: 'Instrument Serif', Georgia, serif;
+            --sans: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            --green: #2d7a4f;
+            --green-bg: #e8f5ee;
+            --green-border: #b8dfc8;
+            --amber: #9a6b1a;
+            --amber-bg: #fef3dc;
+            --amber-border: #f0d88a;
+            --red: #b91c1c;
+            --red-bg: #fde8e8;
+            --red-border: #f5b5b5;
+            --radius: 12px;
+            --radius-lg: 20px;
+            --shadow-sm: 0 1px 2px rgba(26,23,20,0.04);
+            --shadow: 0 2px 8px rgba(26,23,20,0.06), 0 1px 2px rgba(26,23,20,0.04);
+            --shadow-lg: 0 8px 32px rgba(26,23,20,0.08), 0 2px 8px rgba(26,23,20,0.04);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: var(--sans);
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
             line-height: 1.6;
+            font-size: 15px;
+            -webkit-font-smoothing: antialiased;
         }
 
-        .container {
-            max-width: 800px;
+        /* ── Noise texture overlay ── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            opacity: 0.025;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .page {
+            max-width: 640px;
             margin: 0 auto;
-            padding: 2rem 1.5rem;
+            padding: 2rem 1.25rem 4rem;
         }
 
-        /* Header */
-        header {
+        /* ── Header ── */
+        .masthead {
             text-align: center;
-            margin-bottom: 2rem;
+            margin-bottom: 2.5rem;
+            padding-top: 1rem;
         }
 
-        header h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            letter-spacing: -0.025em;
-            margin-bottom: 0.25rem;
+        .logo {
+            font-family: var(--serif);
+            font-size: 2.5rem;
+            font-weight: 400;
+            letter-spacing: -0.02em;
+            color: var(--text);
+            line-height: 1.1;
         }
 
-        header h1 span {
-            color: var(--accent-light);
+        .logo em {
+            font-style: italic;
+            color: var(--accent-warm);
         }
 
-        header p {
+        .tagline {
+            font-size: 0.875rem;
             color: var(--text-muted);
-            font-size: 0.95rem;
+            margin-top: 0.5rem;
+            letter-spacing: 0.02em;
         }
 
-        /* Disclaimer banner */
-        .disclaimer-banner {
-            background: var(--red-bg);
-            border: 1px solid rgba(239,68,68,0.3);
-            border-radius: 12px;
-            padding: 1rem 1.25rem;
-            margin-bottom: 2rem;
-            font-size: 0.85rem;
-            color: #fca5a5;
-        }
-
-        .disclaimer-banner strong {
-            color: var(--red);
-        }
-
-        /* Upload area */
-        .upload-area {
+        .model-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            margin-top: 0.75rem;
+            padding: 0.3rem 0.75rem;
             background: var(--surface);
-            border: 2px dashed var(--border);
-            border-radius: 16px;
-            padding: 3rem 2rem;
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .model-badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--green);
+        }
+
+        /* ── Disclaimer ── */
+        .notice {
+            background: var(--red-bg);
+            border: 1px solid var(--red-border);
+            border-radius: var(--radius);
+            padding: 0.85rem 1rem;
+            margin-bottom: 2rem;
+            font-size: 0.8rem;
+            color: var(--red);
+            line-height: 1.6;
+        }
+
+        .notice strong { font-weight: 600; }
+
+        /* ── Upload ── */
+        .upload-zone {
+            background: var(--surface);
+            border: 2px dashed var(--border-strong);
+            border-radius: var(--radius-lg);
+            padding: 3rem 1.5rem;
             text-align: center;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.25s ease;
             position: relative;
+            box-shadow: var(--shadow-sm);
         }
 
-        .upload-area:hover, .upload-area.dragover {
-            border-color: var(--accent);
-            background: var(--surface-hover);
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: var(--accent-warm);
+            background: var(--surface-alt);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
         }
 
-        .upload-area svg {
-            width: 48px;
-            height: 48px;
+        .upload-icon {
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 1.25rem;
+            border-radius: 50%;
+            background: var(--bg-warm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .upload-icon svg {
+            width: 24px;
+            height: 24px;
+            stroke: var(--accent-warm);
+        }
+
+        .upload-zone h3 {
+            font-family: var(--serif);
+            font-size: 1.3rem;
+            font-weight: 400;
+            margin-bottom: 0.4rem;
+        }
+
+        .upload-zone p {
             color: var(--text-muted);
-            margin-bottom: 1rem;
+            font-size: 0.85rem;
         }
 
-        .upload-area h3 {
-            font-size: 1.1rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .upload-area p {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-
-        .upload-area input[type="file"] {
+        .upload-zone input[type="file"] {
             position: absolute;
             inset: 0;
             opacity: 0;
             cursor: pointer;
         }
 
-        /* Preview */
-        .preview-section {
+        /* Mobile camera button */
+        .camera-row {
             display: none;
-            margin-top: 1.5rem;
-        }
-
-        .preview-section.visible { display: block; }
-
-        .preview-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            overflow: hidden;
-        }
-
-        .preview-image-container {
-            position: relative;
-            background: #000;
-            display: flex;
-            align-items: center;
+            margin-top: 1rem;
+            gap: 0.5rem;
             justify-content: center;
-            max-height: 400px;
-            overflow: hidden;
         }
 
-        .preview-image-container img {
-            max-width: 100%;
-            max-height: 400px;
-            object-fit: contain;
+        @media (pointer: coarse) {
+            .camera-row { display: flex; }
         }
 
-        .preview-actions {
-            padding: 1rem 1.5rem;
-            display: flex;
-            gap: 0.75rem;
+        .camera-btn {
+            display: inline-flex;
             align-items: center;
-        }
-
-        .btn {
-            padding: 0.6rem 1.5rem;
-            border-radius: 10px;
-            border: none;
-            font-size: 0.9rem;
-            font-weight: 600;
+            gap: 0.4rem;
+            padding: 0.55rem 1.1rem;
+            border-radius: 100px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            font-weight: 500;
+            font-family: var(--sans);
             cursor: pointer;
             transition: all 0.15s;
         }
 
-        .btn-primary {
-            background: var(--accent);
-            color: white;
+        .camera-btn:hover {
+            background: var(--bg-warm);
+            border-color: var(--border-strong);
         }
 
-        .btn-primary:hover { background: var(--accent-light); }
-        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .camera-btn svg { width: 16px; height: 16px; }
 
-        .btn-secondary {
-            background: var(--surface-hover);
-            color: var(--text);
+        /* ── Preview ── */
+        .preview { display: none; margin-top: 1.5rem; }
+        .preview.visible { display: block; }
+
+        .preview-frame {
+            background: var(--surface);
             border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow);
         }
 
-        .btn-secondary:hover { background: var(--border); }
+        .preview-img-wrap {
+            background: #f0ede8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            max-height: 380px;
+            overflow: hidden;
+        }
 
-        .filename {
-            color: var(--text-muted);
-            font-size: 0.85rem;
+        .preview-img-wrap img {
+            max-width: 100%;
+            max-height: 380px;
+            object-fit: contain;
+        }
+
+        .preview-bar {
+            padding: 0.85rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .preview-name {
             flex: 1;
+            font-size: 0.82rem;
+            color: var(--text-muted);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
-        /* Loading */
-        .loading-overlay {
+        .btn {
+            padding: 0.55rem 1.25rem;
+            border-radius: 100px;
+            border: none;
+            font-family: var(--sans);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            letter-spacing: 0.01em;
+        }
+
+        .btn-dark {
+            background: var(--accent);
+            color: #fff;
+        }
+        .btn-dark:hover { background: #2d2a26; }
+        .btn-dark:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+        .btn-ghost:hover { background: var(--bg-warm); }
+
+        /* ── Loader ── */
+        .loader-screen {
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(15,17,23,0.85);
+            background: rgba(246,244,240,0.92);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             z-index: 100;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            flex-direction: column;
-            gap: 1rem;
+            gap: 1.25rem;
         }
 
-        .loading-overlay.visible { display: flex; }
+        .loader-screen.visible { display: flex; }
 
-        .spinner {
-            width: 40px;
-            height: 40px;
+        .loader-ring {
+            width: 44px;
+            height: 44px;
             border: 3px solid var(--border);
-            border-top-color: var(--accent);
+            border-top-color: var(--accent-warm);
             border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+            animation: spin 0.9s linear infinite;
         }
 
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .loading-overlay p { color: var(--text-muted); }
-
-        /* Results */
-        .results-section {
-            display: none;
-            margin-top: 1.5rem;
+        .loader-screen p {
+            font-family: var(--serif);
+            font-size: 1.05rem;
+            color: var(--text-secondary);
         }
 
-        .results-section.visible { display: block; }
+        /* ── Results ── */
+        .results { display: none; margin-top: 2rem; }
+        .results.visible {
+            display: block;
+            animation: fadeUp 0.5s ease both;
+        }
 
-        /* Risk gauge */
-        .risk-gauge {
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Risk display */
+        .risk-display {
             background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 2rem;
+            border-radius: var(--radius-lg);
+            padding: 2.25rem 1.5rem 1.75rem;
             text-align: center;
             margin-bottom: 1rem;
-        }
-
-        .gauge-container {
-            position: relative;
-            width: 200px;
-            height: 110px;
-            margin: 0 auto 1rem;
-        }
-
-        .gauge-bg {
-            width: 200px;
-            height: 100px;
-            border-radius: 100px 100px 0 0;
-            background: conic-gradient(
-                from 0.75turn at 50% 100%,
-                var(--green) 0deg,
-                var(--yellow) 90deg,
-                var(--red) 180deg
-            );
+            box-shadow: var(--shadow);
             position: relative;
             overflow: hidden;
         }
 
-        .gauge-bg::after {
+        .risk-display::before {
             content: '';
             position: absolute;
-            width: 140px;
-            height: 70px;
-            background: var(--surface);
-            border-radius: 140px 140px 0 0;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
+            top: 0; left: 0; right: 0;
+            height: 3px;
         }
 
-        .gauge-needle {
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            width: 3px;
-            height: 80px;
-            background: white;
-            transform-origin: bottom center;
-            transform: translateX(-50%) rotate(-90deg);
-            transition: transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
-            z-index: 2;
-            border-radius: 2px;
+        .risk-display.low::before { background: var(--green); }
+        .risk-display.moderate::before { background: var(--amber); }
+        .risk-display.high::before { background: var(--red); }
+
+        .risk-number {
+            font-family: var(--serif);
+            font-size: 4rem;
+            font-weight: 400;
+            line-height: 1;
+            margin-bottom: 0.15rem;
+            letter-spacing: -0.03em;
         }
 
-        .gauge-center {
-            position: absolute;
-            bottom: -5px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 12px;
-            height: 12px;
-            background: white;
-            border-radius: 50%;
-            z-index: 3;
-        }
+        .risk-display.low .risk-number { color: var(--green); }
+        .risk-display.moderate .risk-number { color: var(--amber); }
+        .risk-display.high .risk-number { color: var(--red); }
 
-        .risk-score-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 0.25rem;
-        }
-
-        .risk-score-label {
+        .risk-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
             color: var(--text-muted);
-            font-size: 0.9rem;
+            font-weight: 500;
         }
 
-        /* Urgency tier card */
-        .tier-card {
-            border-radius: 16px;
+        .risk-meter {
+            margin: 1.5rem auto 0;
+            max-width: 320px;
+            height: 6px;
+            background: var(--bg-warm);
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .risk-meter-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .risk-display.low .risk-meter-fill { background: var(--green); }
+        .risk-display.moderate .risk-meter-fill { background: var(--amber); }
+        .risk-display.high .risk-meter-fill { background: var(--red); }
+
+        .risk-meter-labels {
+            display: flex;
+            justify-content: space-between;
+            max-width: 320px;
+            margin: 0.35rem auto 0;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        /* Tier card */
+        .tier {
+            border-radius: var(--radius-lg);
             padding: 1.5rem;
             margin-bottom: 1rem;
             border: 1px solid;
         }
 
-        .tier-card.low {
-            background: var(--green-bg);
-            border-color: rgba(34,197,94,0.3);
-        }
+        .tier.low { background: var(--green-bg); border-color: var(--green-border); }
+        .tier.moderate { background: var(--amber-bg); border-color: var(--amber-border); }
+        .tier.high { background: var(--red-bg); border-color: var(--red-border); }
 
-        .tier-card.moderate {
-            background: var(--yellow-bg);
-            border-color: rgba(234,179,8,0.3);
-        }
-
-        .tier-card.high {
-            background: var(--red-bg);
-            border-color: rgba(239,68,68,0.3);
-        }
-
-        .tier-header {
+        .tier-head {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            margin-bottom: 0.75rem;
+            gap: 0.6rem;
+            margin-bottom: 0.65rem;
         }
 
-        .tier-dot {
-            width: 12px;
-            height: 12px;
+        .tier-pip {
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
+            flex-shrink: 0;
         }
 
-        .tier-card.low .tier-dot { background: var(--green); }
-        .tier-card.moderate .tier-dot { background: var(--yellow); }
-        .tier-card.high .tier-dot { background: var(--red); }
+        .tier.low .tier-pip { background: var(--green); }
+        .tier.moderate .tier-pip { background: var(--amber); }
+        .tier.high .tier-pip { background: var(--red); }
 
-        .tier-label {
-            font-weight: 700;
-            font-size: 1.1rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+        .tier-name {
+            font-family: var(--serif);
+            font-size: 1.15rem;
+            font-weight: 400;
         }
 
-        .tier-card.low .tier-label { color: var(--green); }
-        .tier-card.moderate .tier-label { color: var(--yellow); }
-        .tier-card.high .tier-label { color: var(--red); }
+        .tier.low .tier-name { color: var(--green); }
+        .tier.moderate .tier-name { color: var(--amber); }
+        .tier.high .tier-name { color: var(--red); }
 
-        .confidence-badge {
+        .tier-conf {
             margin-left: auto;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             padding: 0.2rem 0.6rem;
-            border-radius: 6px;
-            background: rgba(255,255,255,0.1);
+            border-radius: 100px;
+            background: rgba(0,0,0,0.05);
             color: var(--text-muted);
+            font-weight: 500;
+            letter-spacing: 0.02em;
         }
 
-        .tier-recommendation {
-            font-size: 0.95rem;
+        .tier-rec {
+            font-size: 0.9rem;
             line-height: 1.7;
+            color: var(--text-secondary);
+        }
+
+        /* Cards */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .card-title {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            margin-bottom: 1.15rem;
         }
 
         /* Probability bars */
-        .prob-bars {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .prob-bars h4 {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 1rem;
-        }
-
-        .prob-bar-row {
+        .bar-row {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            margin-bottom: 0.75rem;
+            gap: 0.65rem;
+            margin-bottom: 0.65rem;
         }
 
-        .prob-bar-label {
-            width: 80px;
-            font-size: 0.9rem;
-            color: var(--text-muted);
+        .bar-label {
+            width: 85px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
         }
 
-        .prob-bar-track {
+        .bar-track {
             flex: 1;
-            height: 8px;
-            background: var(--border);
+            height: 7px;
+            background: var(--bg-warm);
             border-radius: 4px;
             overflow: hidden;
         }
 
-        .prob-bar-fill {
+        .bar-fill {
             height: 100%;
             border-radius: 4px;
-            transition: width 1s ease;
+            transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
-        .prob-bar-fill.benign { background: var(--green); }
-        .prob-bar-fill.malignant { background: var(--red); }
+        .bar-fill.benign { background: var(--green); }
+        .bar-fill.malignant { background: var(--red); }
+        .bar-fill.condition { background: var(--accent-warm); }
 
-        .prob-bar-value {
-            width: 50px;
+        .bar-val {
+            width: 48px;
             text-align: right;
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-
-        /* ABCDE section */
-        .abcde-section {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .abcde-section h4 {
             font-size: 0.85rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Condition card */
+        .cond-top {
+            font-family: var(--serif);
+            font-size: 1.4rem;
+            font-weight: 400;
+            color: var(--accent-warm);
             margin-bottom: 1rem;
+            letter-spacing: -0.01em;
         }
 
-        .abcde-grid {
+        .cond-note {
+            margin-top: 0.85rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-style: italic;
+            line-height: 1.5;
+        }
+
+        /* ABCDE */
+        .abcde-row {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 0.75rem;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.5rem;
         }
 
-        .abcde-item {
-            background: var(--surface-hover);
-            border-radius: 10px;
-            padding: 0.75rem;
+        .abcde-cell {
             text-align: center;
+            padding: 0.85rem 0.35rem;
+            background: var(--surface-alt);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
         }
 
-        .abcde-letter {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--accent-light);
+        .abcde-char {
+            font-family: var(--serif);
+            font-size: 1.6rem;
+            color: var(--accent-warm);
+            line-height: 1;
+            margin-bottom: 0.35rem;
         }
 
         .abcde-word {
-            font-size: 0.8rem;
+            font-size: 0.65rem;
             font-weight: 600;
-            margin-bottom: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-secondary);
+            margin-bottom: 0.2rem;
         }
 
-        .abcde-desc {
-            font-size: 0.75rem;
+        .abcde-hint {
+            font-size: 0.65rem;
             color: var(--text-muted);
+            line-height: 1.35;
         }
 
         /* Result disclaimer */
-        .result-disclaimer {
-            background: var(--surface);
+        .result-notice {
+            background: var(--surface-alt);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 1.25rem;
-            font-size: 0.8rem;
+            border-radius: var(--radius);
+            padding: 1rem 1.15rem;
+            font-size: 0.78rem;
             color: var(--text-muted);
             line-height: 1.7;
         }
 
-        .result-disclaimer strong {
-            color: var(--red);
-        }
+        .result-notice strong { color: var(--red); font-weight: 600; }
 
         /* Footer */
-        footer {
+        .foot {
             text-align: center;
             margin-top: 3rem;
             padding-top: 1.5rem;
             border-top: 1px solid var(--border);
+            font-size: 0.75rem;
             color: var(--text-muted);
-            font-size: 0.8rem;
+            line-height: 1.8;
         }
 
-        /* Responsive */
-        @media (max-width: 600px) {
-            .container { padding: 1rem; }
-            header h1 { font-size: 1.5rem; }
-            .upload-area { padding: 2rem 1rem; }
-            .gauge-container { width: 160px; height: 90px; }
-            .gauge-bg { width: 160px; height: 80px; }
-            .gauge-needle { height: 65px; }
-            .risk-score-value { font-size: 2rem; }
-            .abcde-grid { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+        .foot span {
+            font-family: var(--serif);
+            font-style: italic;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 520px) {
+            .page { padding: 1rem 0.85rem 3rem; }
+            .logo { font-size: 2rem; }
+            .upload-zone { padding: 2rem 1rem; }
+            .risk-number { font-size: 3rem; }
+            .abcde-row { grid-template-columns: repeat(3, 1fr); }
+            .abcde-cell:nth-child(4), .abcde-cell:nth-child(5) {
+                grid-column: span 1;
+            }
+            .bar-label { width: 72px; font-size: 0.8rem; }
+            .cond-top { font-size: 1.2rem; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Skin<span>Tag</span></h1>
-            <p>AI-powered skin lesion screening for low-resource settings</p>
+    <div class="page">
+
+        <!-- Header -->
+        <header class="masthead">
+            <div class="logo">Skin<em>Tag</em></div>
+            <p class="tagline">AI-powered dermatology screening for underserved communities</p>
+            <div class="model-badge">SigLIP-SO400M &middot; 5 Datasets &middot; 47k Samples</div>
         </header>
 
-        <div class="disclaimer-banner">
-            <strong>Medical Disclaimer:</strong> This tool is an AI screening aid, not a medical diagnosis.
-            It cannot replace professional evaluation. Always consult a dermatologist for clinical decisions.
+        <!-- Disclaimer -->
+        <div class="notice">
+            <strong>Not a diagnosis.</strong> SkinTag is an AI screening aid. It cannot replace examination by a qualified dermatologist. Always consult a professional for clinical decisions.
         </div>
 
         <!-- Upload -->
-        <div class="upload-area" id="uploadArea">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-            </svg>
-            <h3>Upload a skin lesion photo</h3>
-            <p>Drag and drop or click to select — JPG, PNG supported</p>
+        <div class="upload-zone" id="uploadZone">
+            <div class="upload-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                </svg>
+            </div>
+            <h3>Upload a lesion photo</h3>
+            <p>Drag &amp; drop or tap to select &mdash; JPG, PNG, WebP</p>
             <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp">
         </div>
 
+        <!-- Mobile camera buttons -->
+        <div class="camera-row" id="cameraRow">
+            <button class="camera-btn" id="cameraBtn" type="button">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.04l-.821 1.315z" /><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" /></svg>
+                Take Photo
+            </button>
+            <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none">
+        </div>
+
         <!-- Preview -->
-        <div class="preview-section" id="previewSection">
-            <div class="preview-card">
-                <div class="preview-image-container">
-                    <img id="previewImage" src="" alt="Uploaded image preview">
+        <div class="preview" id="preview">
+            <div class="preview-frame">
+                <div class="preview-img-wrap">
+                    <img id="previewImg" src="" alt="Uploaded lesion">
                 </div>
-                <div class="preview-actions">
-                    <span class="filename" id="fileName"></span>
-                    <button class="btn btn-secondary" id="clearBtn">Clear</button>
-                    <button class="btn btn-primary" id="analyzeBtn">Analyze</button>
+                <div class="preview-bar">
+                    <span class="preview-name" id="previewName"></span>
+                    <button class="btn btn-ghost" id="clearBtn" type="button">Clear</button>
+                    <button class="btn btn-dark" id="analyzeBtn" type="button">Analyze</button>
                 </div>
             </div>
         </div>
 
         <!-- Loading -->
-        <div class="loading-overlay" id="loadingOverlay">
-            <div class="spinner"></div>
-            <p>Analyzing image with SigLIP vision model...</p>
+        <div class="loader-screen" id="loader">
+            <div class="loader-ring"></div>
+            <p>Analyzing with SigLIP&hellip;</p>
         </div>
 
         <!-- Results -->
-        <div class="results-section" id="resultsSection">
-            <!-- Risk gauge -->
-            <div class="risk-gauge">
-                <div class="gauge-container">
-                    <div class="gauge-bg"></div>
-                    <div class="gauge-needle" id="gaugeNeedle"></div>
-                    <div class="gauge-center"></div>
+        <div class="results" id="results">
+
+            <!-- Risk score -->
+            <div class="risk-display" id="riskDisplay">
+                <div class="risk-number" id="riskNumber">&mdash;</div>
+                <div class="risk-label">Malignancy Risk Score</div>
+                <div class="risk-meter">
+                    <div class="risk-meter-fill" id="riskFill" style="width:0%"></div>
                 </div>
-                <div class="risk-score-value" id="riskScoreValue">—</div>
-                <div class="risk-score-label">Risk Score</div>
+                <div class="risk-meter-labels">
+                    <span>Low</span>
+                    <span>Moderate</span>
+                    <span>High</span>
+                </div>
             </div>
 
-            <!-- Tier card -->
-            <div class="tier-card" id="tierCard">
-                <div class="tier-header">
-                    <div class="tier-dot"></div>
-                    <span class="tier-label" id="tierLabel"></span>
-                    <span class="confidence-badge" id="confidenceBadge"></span>
+            <!-- Tier -->
+            <div class="tier" id="tierCard">
+                <div class="tier-head">
+                    <div class="tier-pip"></div>
+                    <span class="tier-name" id="tierName"></span>
+                    <span class="tier-conf" id="tierConf"></span>
                 </div>
-                <div class="tier-recommendation" id="tierRecommendation"></div>
+                <div class="tier-rec" id="tierRec"></div>
             </div>
 
-            <!-- Probability bars -->
-            <div class="prob-bars">
-                <h4>Classification Probabilities</h4>
-                <div class="prob-bar-row">
-                    <span class="prob-bar-label">Benign</span>
-                    <div class="prob-bar-track">
-                        <div class="prob-bar-fill benign" id="benignBar" style="width: 0%"></div>
-                    </div>
-                    <span class="prob-bar-value" id="benignValue">—</span>
+            <!-- Binary probabilities -->
+            <div class="card">
+                <div class="card-title">Classification</div>
+                <div class="bar-row">
+                    <span class="bar-label">Benign</span>
+                    <div class="bar-track"><div class="bar-fill benign" id="benignFill" style="width:0%"></div></div>
+                    <span class="bar-val" id="benignVal">&mdash;</span>
                 </div>
-                <div class="prob-bar-row">
-                    <span class="prob-bar-label">Malignant</span>
-                    <div class="prob-bar-track">
-                        <div class="prob-bar-fill malignant" id="malignantBar" style="width: 0%"></div>
-                    </div>
-                    <span class="prob-bar-value" id="malignantValue">—</span>
+                <div class="bar-row">
+                    <span class="bar-label">Malignant</span>
+                    <div class="bar-track"><div class="bar-fill malignant" id="malFill" style="width:0%"></div></div>
+                    <span class="bar-val" id="malVal">&mdash;</span>
+                </div>
+            </div>
+
+            <!-- Condition -->
+            <div class="card" id="condCard" style="display:none">
+                <div class="card-title">Estimated Condition</div>
+                <div class="cond-top" id="condTop"></div>
+                <div id="condBars"></div>
+                <div class="cond-note">
+                    Condition estimation is approximate, based on visual similarity to 47,277 training images across 10 diagnostic categories. Only a biopsy can confirm a diagnosis.
                 </div>
             </div>
 
             <!-- ABCDE -->
-            <div class="abcde-section">
-                <h4>What to Look For — ABCDE Criteria</h4>
-                <div class="abcde-grid">
-                    <div class="abcde-item">
-                        <div class="abcde-letter">A</div>
+            <div class="card">
+                <div class="card-title">Self-Check &mdash; ABCDE Criteria</div>
+                <div class="abcde-row">
+                    <div class="abcde-cell">
+                        <div class="abcde-char">A</div>
                         <div class="abcde-word">Asymmetry</div>
-                        <div class="abcde-desc">One half doesn't match the other</div>
+                        <div class="abcde-hint">Halves don't match</div>
                     </div>
-                    <div class="abcde-item">
-                        <div class="abcde-letter">B</div>
+                    <div class="abcde-cell">
+                        <div class="abcde-char">B</div>
                         <div class="abcde-word">Border</div>
-                        <div class="abcde-desc">Edges are irregular, ragged, or blurred</div>
+                        <div class="abcde-hint">Irregular edges</div>
                     </div>
-                    <div class="abcde-item">
-                        <div class="abcde-letter">C</div>
+                    <div class="abcde-cell">
+                        <div class="abcde-char">C</div>
                         <div class="abcde-word">Color</div>
-                        <div class="abcde-desc">Uneven shades of brown, black, tan</div>
+                        <div class="abcde-hint">Uneven shades</div>
                     </div>
-                    <div class="abcde-item">
-                        <div class="abcde-letter">D</div>
+                    <div class="abcde-cell">
+                        <div class="abcde-char">D</div>
                         <div class="abcde-word">Diameter</div>
-                        <div class="abcde-desc">Larger than 6mm (pencil eraser)</div>
+                        <div class="abcde-hint">&gt; 6 mm</div>
                     </div>
-                    <div class="abcde-item">
-                        <div class="abcde-letter">E</div>
+                    <div class="abcde-cell">
+                        <div class="abcde-char">E</div>
                         <div class="abcde-word">Evolution</div>
-                        <div class="abcde-desc">Changes in size, shape, or color</div>
+                        <div class="abcde-hint">Changing shape</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Result disclaimer -->
-            <div class="result-disclaimer" id="resultDisclaimer"></div>
+            <!-- Disclaimer -->
+            <div class="result-notice" id="resultNotice"></div>
         </div>
 
-        <footer>
-            <p>SkinTag — Research prototype for low-resource dermatological screening</p>
-            <p>Powered by SigLIP vision embeddings. Not for clinical use.</p>
+        <!-- Footer -->
+        <footer class="foot">
+            <p><span>SkinTag</span> &mdash; Research prototype for equitable dermatological screening</p>
+            <p>Powered by Google SigLIP-SO400M &middot; 878M parameters &middot; Not for clinical use</p>
         </footer>
     </div>
 
     <script>
-        const uploadArea = document.getElementById('uploadArea');
-        const fileInput = document.getElementById('fileInput');
-        const previewSection = document.getElementById('previewSection');
-        const previewImage = document.getElementById('previewImage');
-        const fileName = document.getElementById('fileName');
-        const clearBtn = document.getElementById('clearBtn');
-        const analyzeBtn = document.getElementById('analyzeBtn');
-        const loadingOverlay = document.getElementById('loadingOverlay');
-        const resultsSection = document.getElementById('resultsSection');
+        const $ = id => document.getElementById(id);
+        const uploadZone = $('uploadZone');
+        const fileInput = $('fileInput');
+        const cameraInput = $('cameraInput');
+        const preview = $('preview');
+        const previewImg = $('previewImg');
+        const previewName = $('previewName');
+        const clearBtn = $('clearBtn');
+        const analyzeBtn = $('analyzeBtn');
+        const loader = $('loader');
+        const results = $('results');
 
         let selectedFile = null;
 
-        // Drag and drop
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.classList.add('dragover');
-        });
-
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.classList.remove('dragover');
-        });
-
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-            const files = e.dataTransfer.files;
-            if (files.length > 0) handleFile(files[0]);
-        });
-
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) handleFile(e.target.files[0]);
-        });
-
+        // ── File handling ──
         function handleFile(file) {
-            if (!file.type.startsWith('image/')) {
-                alert('Please upload an image file (JPG, PNG)');
+            if (!file || !file.type.startsWith('image/')) {
+                alert('Please select an image file (JPG, PNG, WebP)');
                 return;
             }
             selectedFile = file;
             const reader = new FileReader();
-            reader.onload = (e) => {
-                previewImage.src = e.target.result;
-                fileName.textContent = file.name;
-                previewSection.classList.add('visible');
-                resultsSection.classList.remove('visible');
-                uploadArea.style.display = 'none';
+            reader.onload = e => {
+                previewImg.src = e.target.result;
+                previewName.textContent = file.name;
+                preview.classList.add('visible');
+                results.classList.remove('visible');
+                uploadZone.style.display = 'none';
+                $('cameraRow').style.display = 'none';
             };
             reader.readAsDataURL(file);
         }
 
+        // Drag & drop
+        uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+        uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+        uploadZone.addEventListener('drop', e => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+
+        fileInput.addEventListener('change', e => { if (e.target.files.length) handleFile(e.target.files[0]); });
+
+        // Mobile camera
+        $('cameraBtn').addEventListener('click', () => cameraInput.click());
+        cameraInput.addEventListener('change', e => { if (e.target.files.length) handleFile(e.target.files[0]); });
+
+        // Clear
         clearBtn.addEventListener('click', () => {
             selectedFile = null;
             fileInput.value = '';
-            previewSection.classList.remove('visible');
-            resultsSection.classList.remove('visible');
-            uploadArea.style.display = '';
-        });
-
-        analyzeBtn.addEventListener('click', async () => {
-            if (!selectedFile) return;
-
-            analyzeBtn.disabled = true;
-            loadingOverlay.classList.add('visible');
-
-            try {
-                const formData = new FormData();
-                formData.append('file', selectedFile);
-
-                const response = await fetch('/api/analyze', {
-                    method: 'POST',
-                    body: formData,
-                });
-
-                if (!response.ok) {
-                    const err = await response.json();
-                    throw new Error(err.detail || 'Analysis failed');
-                }
-
-                const data = await response.json();
-                displayResults(data);
-            } catch (error) {
-                alert('Analysis failed: ' + error.message);
-            } finally {
-                analyzeBtn.disabled = false;
-                loadingOverlay.classList.remove('visible');
+            cameraInput.value = '';
+            preview.classList.remove('visible');
+            results.classList.remove('visible');
+            uploadZone.style.display = '';
+            // Re-show camera row on touch devices
+            if (window.matchMedia('(pointer: coarse)').matches) {
+                $('cameraRow').style.display = 'flex';
             }
         });
 
-        function displayResults(data) {
-            resultsSection.classList.add('visible');
+        // ── Analyze ──
+        analyzeBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+            analyzeBtn.disabled = true;
+            loader.classList.add('visible');
 
-            // Risk score
-            const score = data.risk_score;
-            document.getElementById('riskScoreValue').textContent = (score * 100).toFixed(1) + '%';
+            try {
+                const fd = new FormData();
+                fd.append('file', selectedFile);
+                const res = await fetch('/api/analyze', { method: 'POST', body: fd });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || 'Analysis failed');
+                }
+                showResults(await res.json());
+            } catch (err) {
+                alert('Analysis failed: ' + err.message);
+            } finally {
+                analyzeBtn.disabled = false;
+                loader.classList.remove('visible');
+            }
+        });
 
-            // Gauge needle: -90deg (left, 0%) to +90deg (right, 100%)
-            const needleAngle = -90 + (score * 180);
-            document.getElementById('gaugeNeedle').style.transform =
-                `translateX(-50%) rotate(${needleAngle}deg)`;
+        // ── Display results ──
+        function showResults(d) {
+            results.classList.add('visible');
 
-            // Tier card
-            const tierCard = document.getElementById('tierCard');
-            tierCard.className = 'tier-card ' + data.urgency_tier;
-            document.getElementById('tierLabel').textContent =
-                data.urgency_tier.charAt(0).toUpperCase() + data.urgency_tier.slice(1) + ' Concern';
-            document.getElementById('confidenceBadge').textContent =
-                'Confidence: ' + data.confidence;
-            document.getElementById('tierRecommendation').textContent = data.recommendation;
+            const score = d.risk_score;
+            const pct = (score * 100).toFixed(1);
+            const tier = d.urgency_tier;
 
-            // Probability bars
-            const benignPct = (data.probabilities.benign * 100).toFixed(1);
-            const malPct = (data.probabilities.malignant * 100).toFixed(1);
-            document.getElementById('benignBar').style.width = benignPct + '%';
-            document.getElementById('benignValue').textContent = benignPct + '%';
-            document.getElementById('malignantBar').style.width = malPct + '%';
-            document.getElementById('malignantValue').textContent = malPct + '%';
+            // Risk display
+            const rd = $('riskDisplay');
+            rd.className = 'risk-display ' + tier;
+            $('riskNumber').textContent = pct + '%';
+            $('riskFill').style.width = pct + '%';
+
+            // Tier
+            const tc = $('tierCard');
+            tc.className = 'tier ' + tier;
+            const tierNames = { low: 'Low Concern', moderate: 'Moderate Concern', high: 'High Concern' };
+            $('tierName').textContent = tierNames[tier] || tier;
+            $('tierConf').textContent = d.confidence;
+            $('tierRec').textContent = d.recommendation;
+
+            // Binary bars
+            const bp = (d.probabilities.benign * 100).toFixed(1);
+            const mp = (d.probabilities.malignant * 100).toFixed(1);
+            $('benignFill').style.width = bp + '%';
+            $('benignVal').textContent = bp + '%';
+            $('malFill').style.width = mp + '%';
+            $('malVal').textContent = mp + '%';
+
+            // Condition
+            const cc = $('condCard');
+            if (d.condition_estimate && d.condition_probabilities) {
+                cc.style.display = 'block';
+                $('condTop').textContent = d.condition_estimate;
+                $('condBars').innerHTML = d.condition_probabilities.map(c => {
+                    const p = (c.probability * 100).toFixed(1);
+                    return `<div class="bar-row">
+                        <span class="bar-label" style="width:170px">${c.condition}</span>
+                        <div class="bar-track"><div class="bar-fill condition" style="width:${p}%"></div></div>
+                        <span class="bar-val">${p}%</span>
+                    </div>`;
+                }).join('');
+            } else {
+                cc.style.display = 'none';
+            }
 
             // Disclaimer
-            document.getElementById('resultDisclaimer').innerHTML =
-                '<strong>Important:</strong> ' + data.disclaimer;
+            $('resultNotice').innerHTML = '<strong>Important:</strong> ' + d.disclaimer;
 
-            // Scroll to results
-            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            results.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     </script>
 </body>

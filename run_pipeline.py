@@ -99,6 +99,7 @@ def stage_check_environment():
         "DDI": data_dir / "ddi" / "ddi_metadata.csv",
         "Fitzpatrick17k": data_dir / "fitzpatrick17k" / "fitzpatrick17k.csv",
         "PAD-UFES-20": data_dir / "pad_ufes" / "metadata.csv",
+        "BCN20000": data_dir / "bcn20000" / "bcn20000_metadata.csv",
     }
     for name, path in checks.items():
         if path.exists():
@@ -346,6 +347,85 @@ def stage_train_models(embeddings, labels, metadata):
         print(f"  {name:<12} {r['train_accuracy']:>10.3f} {r['test_accuracy']:>10.3f} "
               f"{r['test_f1_macro']:>10.3f} {r['test_f1_malignant']:>10.3f}")
 
+    # ------------------------------------------------------------------
+    # Condition classification (10-class) — if enabled and labels exist
+    # ------------------------------------------------------------------
+    train_condition = config.get("training", {}).get("condition_classifier", False)
+    has_condition_labels = "condition_label" in metadata.columns and metadata["condition_label"].notna().sum() > 0
+
+    if train_condition and has_condition_labels:
+        print(f"\n\n  === Condition Classification (10-class) ===")
+
+        # Extract condition labels from the already-split metadata DataFrames
+        cond_train = meta_train["condition_label"].values.astype(float)
+        cond_test = meta_test["condition_label"].values.astype(float)
+
+        # Filter out NaN condition labels
+        train_mask = ~np.isnan(cond_train)
+        test_mask = ~np.isnan(cond_test)
+
+        if train_mask.sum() > 100 and test_mask.sum() > 10:
+            X_cond_train = X_train[train_mask]
+            y_cond_train = cond_train[train_mask].astype(int)
+            X_cond_test = X_test[test_mask]
+            y_cond_test = cond_test[test_mask].astype(int)
+
+            n_classes = len(np.unique(y_cond_train))
+            print(f"  Condition train: {len(y_cond_train)}, test: {len(y_cond_test)}, classes: {n_classes}")
+
+            cond_results = {}
+            cond_model_specs = [
+                ("logistic", lambda: SklearnClassifier(classifier_type="logistic")),
+                ("deep", lambda: DeepClassifier(
+                    embedding_dim=emb_np.shape[1], n_classes=n_classes, device=device
+                )),
+            ]
+
+            for model_type, make_clf in cond_model_specs:
+                print(f"\n  --- Training condition/{model_type} ---")
+                try:
+                    clf = make_clf()
+                    clf.fit(X_cond_train, y_cond_train, sample_weight=sample_weights[train_mask] if sample_weights is not None else None)
+
+                    y_pred_test = clf.predict(X_cond_test)
+                    test_acc = float(np.mean(y_pred_test == y_cond_test))
+                    test_f1 = float(f1_score(y_cond_test, y_pred_test, average="macro", zero_division=0))
+
+                    print(f"    Test acc={test_acc:.3f}  F1 macro={test_f1:.3f}")
+
+                    cond_results[model_type] = {
+                        "test_accuracy": test_acc,
+                        "test_f1_macro": test_f1,
+                    }
+
+                    # Save model
+                    model_path = cache_dir / f"classifier_condition_{model_type}.pkl"
+                    with open(model_path, "wb") as f:
+                        pickle.dump(clf, f)
+                    print(f"    Saved: {model_path}")
+
+                    # Default condition classifier (prefer logistic)
+                    if model_type == "logistic":
+                        with open(cache_dir / "classifier_condition.pkl", "wb") as f:
+                            pickle.dump(clf, f)
+
+                except Exception as exc:
+                    _warn(f"Train/condition_{model_type}", f"Condition model training failed", exc)
+                    traceback.print_exc()
+
+            # Save condition results
+            with open(cache_dir / "condition_training_results.json", "w") as f:
+                json.dump(cond_results, f, indent=2)
+
+            # Condition summary table
+            print(f"\n  {'Cond Model':<12} {'Test Acc':>10} {'F1 Macro':>10}")
+            print(f"  {'-'*34}")
+            for name, r in cond_results.items():
+                print(f"  {name:<12} {r['test_accuracy']:>10.3f} {r['test_f1_macro']:>10.3f}")
+        else:
+            print(f"  Skipping condition training: insufficient labeled data "
+                  f"(train={train_mask.sum()}, test={test_mask.sum()})")
+
     return results
 
 
@@ -457,6 +537,40 @@ def stage_evaluate():
         }
         best = compare_models(summary)
         print(f"\n  Best model: {best['best_model']} (F1 macro={best['best_metric']:.3f})")
+
+    # ------------------------------------------------------------------
+    # Condition evaluation (10-class)
+    # ------------------------------------------------------------------
+    cond_classifier_path = cache_dir / "classifier_condition.pkl"
+    if cond_classifier_path.exists() and "condition_label" in test_meta.columns:
+        print(f"\n\n  === Condition Evaluation (10-class) ===")
+        try:
+            with open(cond_classifier_path, "rb") as f:
+                cond_clf = pickle.load(f)
+
+            cond_labels = test_meta["condition_label"].values.astype(float)
+            cond_mask = ~np.isnan(cond_labels)
+
+            if cond_mask.sum() > 10:
+                X_cond = X_test[cond_mask]
+                y_cond = cond_labels[cond_mask].astype(int)
+                y_cond_pred = cond_clf.predict(X_cond)
+
+                from src.evaluation.metrics import condition_classification_report
+                from src.data.taxonomy import CONDITION_NAMES, Condition
+
+                cond_report = condition_classification_report(y_cond, y_cond_pred)
+                all_results["condition"] = cond_report
+
+                print(f"  Condition accuracy: {cond_report['accuracy']:.3f}")
+                print(f"  Condition F1 macro: {cond_report['f1_macro']:.3f}")
+                print(f"  Per-condition F1:")
+                for cid, metrics in cond_report.get("per_condition", {}).items():
+                    cname = CONDITION_NAMES.get(Condition(int(cid)), f"Class {cid}")
+                    print(f"    {cname:<30} F1={metrics['f1']:.3f}  n={metrics['n']}")
+        except Exception as exc:
+            _warn("Evaluate/condition", "Condition evaluation failed", exc)
+            traceback.print_exc()
 
     # Save
     def _convert(obj):
@@ -589,12 +703,16 @@ def _print_summary(t_start):
     cache_dir = PROJECT_ROOT / "results" / "cache"
     artifacts = [
         ("embeddings.pt", "SigLIP embeddings"),
-        ("classifier_baseline.pkl", "Baseline model"),
-        ("classifier_logistic.pkl", "Logistic regression model"),
-        ("classifier_deep.pkl", "Deep MLP model"),
-        ("classifier.pkl", "Default model (for app)"),
-        ("training_results.json", "Training metrics"),
-        ("evaluation_results.json", "Fairness evaluation"),
+        ("classifier_baseline.pkl", "Baseline model (binary)"),
+        ("classifier_logistic.pkl", "Logistic regression (binary)"),
+        ("classifier_deep.pkl", "Deep MLP (binary)"),
+        ("classifier.pkl", "Default binary model (for app)"),
+        ("classifier_condition_logistic.pkl", "Logistic regression (condition)"),
+        ("classifier_condition_deep.pkl", "Deep MLP (condition)"),
+        ("classifier_condition.pkl", "Default condition model"),
+        ("training_results.json", "Binary training metrics"),
+        ("condition_training_results.json", "Condition training metrics"),
+        ("evaluation_results.json", "Full evaluation (both targets)"),
         ("metadata.csv", "Dataset metadata"),
         ("test_metadata.csv", "Test split metadata"),
     ]

@@ -31,6 +31,7 @@ app = FastAPI(title="SkinTag", description="AI-powered skin lesion triage screen
 _state = {
     "extractor": None,
     "classifier": None,
+    "condition_classifier": None,  # 10-class condition estimator
     "e2e_model": None,  # End-to-end fine-tuned model (if available)
     "triage": None,
     "config": None,
@@ -81,6 +82,15 @@ async def load_models():
         _state["inference_mode"] = "embedding+head"
         print(f"Embedding extractor ready (device={device})")
 
+    # Load condition classifier (10-class)
+    cond_path = cache_dir / "classifier_condition.pkl"
+    if cond_path.exists():
+        with open(cond_path, "rb") as f:
+            _state["condition_classifier"] = pickle.load(f)
+        print(f"Loaded condition classifier: {cond_path.name}")
+    else:
+        print("No condition classifier found (condition estimation disabled)")
+
     # Load triage system
     triage_config = _state["config"].get("triage", {})
     _state["triage"] = TriageSystem(triage_config)
@@ -126,7 +136,7 @@ async def analyze_image(file: UploadFile = File(...)):
     triage = _state["triage"]
     result = triage.assess(mal_prob)
 
-    return JSONResponse({
+    response = {
         "risk_score": round(result.risk_score, 4),
         "urgency_tier": result.urgency_tier,
         "recommendation": result.recommendation,
@@ -136,7 +146,41 @@ async def analyze_image(file: UploadFile = File(...)):
             "benign": round(1 - mal_prob, 4),
             "malignant": round(mal_prob, 4),
         },
-    })
+    }
+
+    # Condition estimation (10-class)
+    cond_clf = _state.get("condition_classifier")
+    if cond_clf is not None:
+        try:
+            from src.data.taxonomy import CONDITION_NAMES, Condition
+
+            if _state["inference_mode"] == "e2e":
+                # For e2e, re-extract embedding for condition head
+                emb = _state["extractor"].extract([image]) if _state["extractor"] else None
+                cond_input = emb.numpy() if emb is not None else None
+            else:
+                cond_input = embedding.numpy()
+
+            if cond_input is not None:
+                cond_proba = cond_clf.predict_proba(cond_input)
+                if cond_proba.ndim == 2:
+                    top_indices = np.argsort(cond_proba[0])[::-1][:3]
+                    top_condition = int(top_indices[0])
+                    condition_probs = []
+                    for idx in top_indices:
+                        cond_enum = Condition(int(idx))
+                        condition_probs.append({
+                            "condition": CONDITION_NAMES.get(cond_enum, f"Class {idx}"),
+                            "probability": round(float(cond_proba[0, idx]), 4),
+                        })
+
+                    cond_enum = Condition(top_condition)
+                    response["condition_estimate"] = CONDITION_NAMES.get(cond_enum, f"Class {top_condition}")
+                    response["condition_probabilities"] = condition_probs
+        except Exception:
+            pass  # Condition estimation is optional; don't fail the request
+
+    return JSONResponse(response)
 
 
 @app.get("/api/health")

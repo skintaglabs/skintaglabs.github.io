@@ -51,7 +51,7 @@ def compute_per_group_metrics(y_true, y_pred, y_proba, groups):
     """
     y_true = np.asarray(y_true)
     y_pred = np.asarray(y_pred)
-    groups = np.asarray(groups)
+    groups = np.asarray([str(g) for g in groups])  # normalize mixed types
     unique_groups = np.unique(groups)
     results = {}
 
@@ -176,6 +176,49 @@ def compare_models(model_results: dict):
         "models": comparison,
         "best_model": best_model,
         "best_metric": float(best_metric),
+    }
+
+
+def condition_classification_report(y_true, y_pred):
+    """Multi-class condition classification metrics.
+
+    Returns dict with overall accuracy, F1 macro, and per-condition breakdown
+    (precision, recall/sensitivity, F1, support count).
+    """
+    y_true = np.asarray(y_true)
+    y_pred = np.asarray(y_pred)
+
+    acc = accuracy_score(y_true, y_pred)
+    f1_mac = float(f1_score(y_true, y_pred, average="macro", zero_division=0))
+    f1_wt = float(f1_score(y_true, y_pred, average="weighted", zero_division=0))
+
+    # Per-condition metrics
+    unique_classes = sorted(np.unique(np.concatenate([y_true, y_pred])))
+    per_condition = {}
+    for cls in unique_classes:
+        mask_true = y_true == cls
+        mask_pred = y_pred == cls
+        tp = int((mask_true & mask_pred).sum())
+        fp = int((~mask_true & mask_pred).sum())
+        fn = int((mask_true & ~mask_pred).sum())
+        n = int(mask_true.sum())
+
+        precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+        recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        f1_val = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
+
+        per_condition[int(cls)] = {
+            "precision": float(precision),
+            "recall": float(recall),
+            "f1": float(f1_val),
+            "n": n,
+        }
+
+    return {
+        "accuracy": float(acc),
+        "f1_macro": f1_mac,
+        "f1_weighted": f1_wt,
+        "per_condition": per_condition,
     }
 
 
