@@ -15,25 +15,23 @@ Medical images are captured under inconsistent conditions — different cameras,
 ## Setup
 
 ```bash
-pip install -r requirements.txt
+make venv     # Creates venv and installs dependencies (recommended on macOS)
+# or
+make install  # Install dependencies directly
 ```
 
 ## Usage
 
-### Local
+### Training Workflow
+
+Models are trained on NVIDIA RTX 4070 Ti Super.
 
 ```bash
-make install   # Install dependencies
-make data      # Download HAM10000 dataset
-make train     # Run training
-make evaluate  # Run evaluation
-```
-
-### Model Management
-
-```bash
-make upload-model MODEL=results/models/classifier.pt TAG=v1.0.0    # Upload to GitHub release
-make download-model TAG=v1.0.0 OUTPUT=results/models/classifier.pt # Download from release
+make install                                                        # Install dependencies
+make data                                                           # Download HAM10000 dataset
+make train                                                          # Train model
+make evaluate                                                       # Evaluate performance
+make upload-model MODEL=results/models/classifier.pt TAG=v1.0.0    # Upload trained model
 ```
 
 ### GitHub Actions

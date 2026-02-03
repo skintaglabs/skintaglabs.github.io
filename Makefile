@@ -1,9 +1,14 @@
-.PHONY: help install data data-ddi data-pad-ufes pipeline pipeline-quick train train-all train-multi evaluate evaluate-cross-domain app app-docker app-docker-gpu upload-model download-model clean
+.PHONY: help venv install install-gpu data data-ddi data-pad-ufes pipeline pipeline-quick train train-all train-multi evaluate evaluate-cross-domain app app-docker app-docker-gpu upload-model clean
+
+# Python interpreter (prefers venv if available)
+PYTHON := $(shell if [ -f venv/bin/python ]; then echo venv/bin/python; else echo python3; fi)
+PYTHON_ENV := OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONPATH=.
 
 help:
 	@echo "Usage: make [target]"
 	@echo ""
 	@echo "Setup:"
+	@echo "  venv               Create virtual environment (recommended on macOS)"
 	@echo "  install            Install dependencies"
 	@echo "  install-gpu        Install dependencies with CUDA GPU support"
 	@echo "  data               Download HAM10000 dataset from Kaggle"
@@ -30,23 +35,39 @@ help:
 	@echo ""
 	@echo "Model Management:"
 	@echo "  upload-model       Upload model to GitHub release (MODEL=path/to/model.pt TAG=v1.0.0)"
-	@echo "  download-model     Download model from GitHub release (TAG=v1.0.0 OUTPUT=path/to/model.pt)"
 	@echo ""
 	@echo "  clean              Remove cached embeddings and models"
 
+venv:
+	@if [ -d venv ]; then \
+		echo "Virtual environment already exists at ./venv"; \
+	else \
+		echo "Creating virtual environment..."; \
+		if command -v python3.11 >/dev/null 2>&1; then \
+			python3.11 -m venv venv; \
+		else \
+			python3 -m venv venv; \
+		fi; \
+		echo "Installing dependencies..."; \
+		venv/bin/pip install --upgrade pip; \
+		venv/bin/pip install -r requirements.txt; \
+		echo "Virtual environment created and dependencies installed"; \
+		echo "Run 'make app' or other commands - they will automatically use the venv"; \
+	fi
+
 install:
-	pip install -r requirements.txt
+	$(PYTHON) -m pip install -r requirements.txt
 
 install-gpu:
-	pip install -r requirements.txt
-	pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126
+	$(PYTHON) -m pip install -r requirements.txt
+	$(PYTHON) -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126
 
 # Unified pipeline
 pipeline:
-	PYTHONPATH=. python3 run_pipeline.py
+	$(PYTHON_ENV) $(PYTHON) run_pipeline.py
 
 pipeline-quick:
-	PYTHONPATH=. python3 run_pipeline.py --quick --no-app
+	$(PYTHON_ENV) $(PYTHON) run_pipeline.py --quick --no-app
 
 # Dataset downloads
 data:
@@ -70,24 +91,24 @@ data-pad-ufes:
 
 # Training
 train:
-	PYTHONPATH=. python3 scripts/train.py
+	$(PYTHON_ENV) $(PYTHON) scripts/train.py
 
 train-all:
-	PYTHONPATH=. python3 scripts/train_all_models.py
+	$(PYTHON_ENV) $(PYTHON) scripts/train_all_models.py
 
 train-multi:
-	PYTHONPATH=. python3 scripts/train.py --multi-dataset --domain-balance --model all
+	$(PYTHON_ENV) $(PYTHON) scripts/train.py --multi-dataset --domain-balance --model all
 
 # Evaluation
 evaluate:
-	PYTHONPATH=. python3 scripts/evaluate.py --models logistic deep baseline
+	$(PYTHON_ENV) $(PYTHON) scripts/evaluate.py --models logistic deep baseline
 
 evaluate-cross-domain:
-	PYTHONPATH=. python3 scripts/evaluate_cross_domain.py
+	$(PYTHON_ENV) $(PYTHON) scripts/evaluate_cross_domain.py
 
 # Application
 app:
-	PYTHONPATH=. python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+	$(PYTHON_ENV) $(PYTHON) -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 app-docker:
 	docker build -t skintag .
@@ -116,15 +137,3 @@ endif
 		gh release create $(TAG) $(MODEL) --title "Model $(TAG)" --notes "Model checkpoint $(TAG)"; \
 	fi
 	@echo "Model uploaded successfully"
-
-download-model:
-ifndef TAG
-	$(error TAG is required. Usage: make download-model TAG=v1.0.0 OUTPUT=path/to/model.pt)
-endif
-ifndef OUTPUT
-	$(error OUTPUT is required. Usage: make download-model TAG=v1.0.0 OUTPUT=path/to/model.pt)
-endif
-	@echo "Downloading model from release $(TAG)..."
-	@mkdir -p $$(dirname $(OUTPUT))
-	@gh release download $(TAG) -p "*.pt" -p "*.pth" -p "*.safetensors" -p "*.ckpt" -O $(OUTPUT)
-	@echo "Model downloaded to $(OUTPUT)"
