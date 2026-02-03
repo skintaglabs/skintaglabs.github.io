@@ -8,7 +8,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 
 
-def _make_xgboost_clf(n_classes=2):
+def _make_xgboost_clf(n_classes: int = 2):
     """Create an XGBoost classifier with tuned hyperparameters for SigLIP embeddings."""
     from xgboost import XGBClassifier
     return XGBClassifier(

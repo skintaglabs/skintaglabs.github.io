@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from io import BytesIO
 
+import numpy as np
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
@@ -123,7 +124,6 @@ async def classify(file: UploadFile = File(...)):
         else:
             # Demo mode: use embedding norm as a proxy score
             # This is NOT a real prediction - just for API testing
-            import numpy as np
             emb_np = embeddings.numpy()
             # Use a simple hash of embedding to generate consistent pseudo-predictions
             score = float(np.mean(emb_np) + 0.5)  # Normalize around 0.5

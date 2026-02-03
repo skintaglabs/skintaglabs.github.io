@@ -29,6 +29,13 @@ make train     # Run training
 make evaluate  # Run evaluation
 ```
 
+### Model Management
+
+```bash
+make upload-model MODEL=results/models/classifier.pt TAG=v1.0.0    # Upload to GitHub release
+make download-model TAG=v1.0.0 OUTPUT=results/models/classifier.pt # Download from release
+```
+
 ### GitHub Actions
 
 1. Go to **Actions → Train Model → Run workflow**

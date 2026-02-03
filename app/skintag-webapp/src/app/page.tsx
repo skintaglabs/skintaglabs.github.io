@@ -30,9 +30,9 @@ const CLASS_LABELS = {
 };
 
 const URGENCY_CONFIG = {
-  low: { icon: CheckCircle, color: 'text-risk-low', bg: 'bg-risk-low/10', border: 'border-risk-low/30', label: 'Low Urgency' },
-  medium: { icon: AlertTriangle, color: 'text-risk-medium', bg: 'bg-risk-medium/10', border: 'border-risk-medium/30', label: 'Moderate Urgency' },
-  high: { icon: AlertCircle, color: 'text-risk-high', bg: 'bg-risk-high/10', border: 'border-risk-high/30', label: 'Higher Urgency' }
+  low: { icon: CheckCircle, color: 'text-risk-low', bg: 'bg-risk-low/10', border: 'border-risk-low/30', barBg: 'bg-risk-low', label: 'Low Urgency' },
+  medium: { icon: AlertTriangle, color: 'text-risk-medium', bg: 'bg-risk-medium/10', border: 'border-risk-medium/30', barBg: 'bg-risk-medium', label: 'Moderate Urgency' },
+  high: { icon: AlertCircle, color: 'text-risk-high', bg: 'bg-risk-high/10', border: 'border-risk-high/30', barBg: 'bg-risk-high', label: 'Higher Urgency' }
 };
 
 // Simulate analysis (replace with real API call)
@@ -52,9 +52,9 @@ async function analyzeImage(imageData: string): Promise<AnalysisResult> {
   const class1Prob = classLabel === 1 ? confidence : (1 - confidence);
   const riskScore = classLabel === 1 ? 0.5 + (confidence * 0.5) : (1 - confidence) * 0.4;
 
-  let urgencyTier: 'low' | 'medium' | 'high' = 'low';
-  if (riskScore >= 0.6) urgencyTier = 'high';
-  else if (riskScore >= 0.3) urgencyTier = 'medium';
+  const urgencyTier: 'low' | 'medium' | 'high' =
+    riskScore >= 0.6 ? 'high' :
+    riskScore >= 0.3 ? 'medium' : 'low';
 
   const recommendations = {
     low: 'Continue regular self-monitoring. Photograph this lesion monthly to track changes.',
@@ -105,15 +105,14 @@ export default function SkinTag() {
     setShowCamera(false);
   }, [stream]);
 
-  const capturePhoto = useCallback(() => {
-    if (videoRef.current) {
-      const canvas = document.createElement('canvas');
-      canvas.width = videoRef.current.videoWidth;
-      canvas.height = videoRef.current.videoHeight;
-      canvas.getContext('2d')?.drawImage(videoRef.current, 0, 0);
-      handleImageSelected(canvas.toDataURL('image/jpeg', 0.9));
-      stopCamera();
-    }
+  const capturePhoto = useCallback(async () => {
+    if (!videoRef.current) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+    canvas.getContext('2d')?.drawImage(videoRef.current, 0, 0);
+    stopCamera();
+    await handleImageSelected(canvas.toDataURL('image/jpeg', 0.9));
   }, [stopCamera]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -307,7 +306,7 @@ export default function SkinTag() {
                     initial={{ width: 0 }}
                     animate={{ width: `${result.risk_score * 100}%` }}
                     transition={{ duration: 0.8 }}
-                    className={`h-full rounded-full ${result.urgency_tier === 'low' ? 'bg-risk-low' : result.urgency_tier === 'medium' ? 'bg-risk-medium' : 'bg-risk-high'}`}
+                    className={`h-full rounded-full ${config.barBg}`}
                   />
                 </div>
                 <p className="text-xs text-charcoal-light mt-3">{result.description}</p>

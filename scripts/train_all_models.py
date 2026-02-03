@@ -153,10 +153,10 @@ def main():
         "n_test": len(X_test),
     }
 
-    def convert(obj):
-        if isinstance(obj, (np.integer,)):
+    def convert(obj: object) -> object:
+        if isinstance(obj, np.integer):
             return int(obj)
-        if isinstance(obj, (np.floating,)):
+        if isinstance(obj, np.floating):
             return float(obj)
         if isinstance(obj, np.ndarray):
             return obj.tolist()

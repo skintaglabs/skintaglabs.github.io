@@ -1,4 +1,4 @@
-.PHONY: help install data data-ddi data-pad-ufes pipeline pipeline-quick train train-all train-multi evaluate evaluate-cross-domain app app-docker app-docker-gpu clean
+.PHONY: help install data data-ddi data-pad-ufes pipeline pipeline-quick train train-all train-multi evaluate evaluate-cross-domain app app-docker app-docker-gpu upload-model download-model clean
 
 help:
 	@echo "Usage: make [target]"
@@ -28,6 +28,10 @@ help:
 	@echo "  app-docker         Build and run web app in Docker (CPU)"
 	@echo "  app-docker-gpu     Build and run web app in Docker (GPU)"
 	@echo ""
+	@echo "Model Management:"
+	@echo "  upload-model       Upload model to GitHub release (MODEL=path/to/model.pt TAG=v1.0.0)"
+	@echo "  download-model     Download model from GitHub release (TAG=v1.0.0 OUTPUT=path/to/model.pt)"
+	@echo ""
 	@echo "  clean              Remove cached embeddings and models"
 
 install:
@@ -39,10 +43,10 @@ install-gpu:
 
 # Unified pipeline
 pipeline:
-	PYTHONPATH=. python run_pipeline.py
+	PYTHONPATH=. python3 run_pipeline.py
 
 pipeline-quick:
-	PYTHONPATH=. python run_pipeline.py --quick --no-app
+	PYTHONPATH=. python3 run_pipeline.py --quick --no-app
 
 # Dataset downloads
 data:
@@ -66,24 +70,24 @@ data-pad-ufes:
 
 # Training
 train:
-	PYTHONPATH=. python scripts/train.py
+	PYTHONPATH=. python3 scripts/train.py
 
 train-all:
-	PYTHONPATH=. python scripts/train_all_models.py
+	PYTHONPATH=. python3 scripts/train_all_models.py
 
 train-multi:
-	PYTHONPATH=. python scripts/train.py --multi-dataset --domain-balance --model all
+	PYTHONPATH=. python3 scripts/train.py --multi-dataset --domain-balance --model all
 
 # Evaluation
 evaluate:
-	PYTHONPATH=. python scripts/evaluate.py --models logistic deep baseline
+	PYTHONPATH=. python3 scripts/evaluate.py --models logistic deep baseline
 
 evaluate-cross-domain:
-	PYTHONPATH=. python scripts/evaluate_cross_domain.py
+	PYTHONPATH=. python3 scripts/evaluate_cross_domain.py
 
 # Application
 app:
-	PYTHONPATH=. python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+	PYTHONPATH=. python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 app-docker:
 	docker build -t skintag .
@@ -95,3 +99,32 @@ app-docker-gpu:
 
 clean:
 	rm -rf results/cache/*
+
+# Model management
+upload-model:
+ifndef MODEL
+	$(error MODEL is required. Usage: make upload-model MODEL=path/to/model.pt TAG=v1.0.0)
+endif
+ifndef TAG
+	$(error TAG is required. Usage: make upload-model MODEL=path/to/model.pt TAG=v1.0.0)
+endif
+	@test -f "$(MODEL)" || (echo "Error: Model file '$(MODEL)' not found" && exit 1)
+	@echo "Uploading $(MODEL) to release $(TAG)..."
+	@if gh release view $(TAG) >/dev/null 2>&1; then \
+		gh release upload $(TAG) $(MODEL) --clobber; \
+	else \
+		gh release create $(TAG) $(MODEL) --title "Model $(TAG)" --notes "Model checkpoint $(TAG)"; \
+	fi
+	@echo "Model uploaded successfully"
+
+download-model:
+ifndef TAG
+	$(error TAG is required. Usage: make download-model TAG=v1.0.0 OUTPUT=path/to/model.pt)
+endif
+ifndef OUTPUT
+	$(error OUTPUT is required. Usage: make download-model TAG=v1.0.0 OUTPUT=path/to/model.pt)
+endif
+	@echo "Downloading model from release $(TAG)..."
+	@mkdir -p $$(dirname $(OUTPUT))
+	@gh release download $(TAG) -p "*.pt" -p "*.pth" -p "*.safetensors" -p "*.ckpt" -O $(OUTPUT)
+	@echo "Model downloaded to $(OUTPUT)"

@@ -3,11 +3,6 @@
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
-from src.data.dermoscope_aug import (
-    get_dermoscope_removal_pipeline,
-    get_dermoscope_addition_pipeline,
-)
-
 
 def get_lighting_augmentation():
     """Simulate lighting and exposure variations (different exam rooms, cameras)."""
@@ -34,11 +29,26 @@ def get_compression_augmentation():
     ])
 
 
+def get_skin_tone_augmentation(p: float = 0.5):
+    """Augmentation for skin tone variation.
+
+    Placeholder for skin tone augmentation.
+
+    Args:
+        p: probability of applying the augmentation
+
+    Returns:
+        Albumentations Compose pipeline
+    """
+    return A.Compose([
+        A.HueSaturationValue(hue_shift_limit=10, sat_shift_limit=20, val_shift_limit=10, p=p),
+    ])
+
+
 def get_domain_bridging_augmentation(source_domain: str, p: float = 0.5):
     """Get domain-bridging augmentation based on source imaging domain.
 
-    Randomly adds or removes dermoscope artifacts so the model cannot rely
-    on imaging source as a classification signal.
+    Placeholder for domain-specific augmentations.
 
     Args:
         source_domain: "dermoscopic", "clinical", or "smartphone"
@@ -47,14 +57,7 @@ def get_domain_bridging_augmentation(source_domain: str, p: float = 0.5):
     Returns:
         Albumentations Compose pipeline
     """
-    if source_domain == "dermoscopic":
-        # Remove dermoscope artifacts to look more like phone photos
-        return get_dermoscope_removal_pipeline(p=p)
-    elif source_domain in ("clinical", "smartphone"):
-        # Add dermoscope artifacts to break the domain-pathology correlation
-        return get_dermoscope_addition_pipeline(p=p)
-    else:
-        return A.Compose([])  # No-op for unknown domains
+    return A.Compose([])  # No-op
 
 
 def get_training_transform(image_size: int = 448, domain: str = None):
