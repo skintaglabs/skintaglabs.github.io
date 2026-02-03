@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkinTag — AI Dermatology Screening</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f6f4f0;
+            --surface: #ffffff;
+            --border: #e2ddd5;
+            --text: #1a1714;
+            --text-secondary: #5c564d;
+            --text-muted: #8a8279;
+            --accent-warm: #6b4c2a;
+            --serif: 'Instrument Serif', Georgia, serif;
+            --sans: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-family: var(--serif);
+            font-size: 3rem;
+            font-weight: 400;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.5rem;
+        }
+
+        h1 em {
+            font-style: italic;
+            color: var(--accent-warm);
+        }
+
+        .tagline {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.35rem 0.9rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            font-weight: 500;
+        }
+
+        .versions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .version-card {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .version-card:hover {
+            border-color: var(--accent-warm);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(26,23,20,0.08);
+        }
+
+        .version-card h2 {
+            font-family: var(--serif);
+            font-size: 1.75rem;
+            font-weight: 400;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        .version-tag {
+            display: inline-block;
+            font-size: 0.7rem;
+            padding: 0.25rem 0.6rem;
+            background: rgba(107, 76, 42, 0.1);
+            color: var(--accent-warm);
+            border-radius: 100px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+        }
+
+        .version-description {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 1.25rem;
+        }
+
+        .features {
+            list-style: none;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .features li {
+            padding-left: 1.25rem;
+            position: relative;
+            margin-bottom: 0.4rem;
+        }
+
+        .features li:before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: var(--accent-warm);
+            font-weight: bold;
+        }
+
+        .cta {
+            margin-top: 1.5rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            color: var(--accent-warm);
+            font-size: 0.9rem;
+        }
+
+        .cta svg {
+            width: 16px;
+            height: 16px;
+            transition: transform 0.2s;
+        }
+
+        .version-card:hover .cta svg {
+            transform: translateX(4px);
+        }
+
+        footer {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.8;
+        }
+
+        footer span {
+            font-family: var(--serif);
+            font-style: italic;
+        }
+
+        @media (max-width: 640px) {
+            h1 { font-size: 2.25rem; }
+            .versions { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Skin<em>Tag</em></h1>
+            <p class="tagline">AI-powered dermatology screening for underserved communities</p>
+            <div class="badge">Choose Your Experience</div>
+        </header>
+
+        <main class="versions">
+            <a href="./classic/" class="version-card">
+                <span class="version-tag">Classic</span>
+                <h2>Simple & Fast</h2>
+                <p class="version-description">
+                    Lightweight HTML interface with warm aesthetic design.
+                    Perfect for quick analysis with minimal resource usage.
+                </p>
+                <ul class="features">
+                    <li>Single-page application</li>
+                    <li>No JavaScript framework overhead</li>
+                    <li>Warm, accessible design</li>
+                    <li>ABCDE self-check guide</li>
+                </ul>
+                <span class="cta">
+                    Launch Classic
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </span>
+            </a>
+
+            <a href="./app/" class="version-card">
+                <span class="version-tag">Modern</span>
+                <h2>Rich Experience</h2>
+                <p class="version-description">
+                    Modern React interface with animations and advanced features.
+                    Optimized for mobile with smooth interactions.
+                </p>
+                <ul class="features">
+                    <li>Smooth animations (Framer Motion)</li>
+                    <li>Mobile camera integration</li>
+                    <li>Progressive loading states</li>
+                    <li>Enhanced visual feedback</li>
+                </ul>
+                <span class="cta">
+                    Launch Modern
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </span>
+            </a>
+        </main>
+
+        <footer>
+            <p><span>SkinTag</span> — Research prototype for equitable dermatological screening</p>
+            <p>Powered by Google SigLIP-SO400M · 878M parameters · Not for clinical use</p>
+        </footer>
+    </div>
+</body>
+</html>
