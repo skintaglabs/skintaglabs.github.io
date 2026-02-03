@@ -137,12 +137,32 @@ jobs:
           }
           EOF
 
-          # Commit to main branch (deploy-webapp workflow will pick it up)
+          # Commit and push to main branch
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Fetch latest main
+          git fetch origin main
+          git checkout main
+          git pull origin main
+
+          # Apply changes
+          mkdir -p public
+          cat > public/api-config.json <<EOF
+          {
+            "apiUrl": "${{ env.TUNNEL_URL }}",
+            "status": "online",
+            "updatedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          EOF
+
           git add public/api-config.json
-          git diff --quiet && git diff --staged --quiet || git commit -m "Update API endpoint [skip ci]"
-          git push origin HEAD:main || echo "Failed to push API config (may already be up to date)"
+          if ! git diff --quiet HEAD; then
+            git commit -m "Update API endpoint [skip ci]"
+            git push origin main || echo "::warning::Failed to push API config"
+          else
+            echo "No changes to API config"
+          fi
 
       - name: Cancel previous workflow
         if: steps.find_previous.outputs.previous_run_id != ''
