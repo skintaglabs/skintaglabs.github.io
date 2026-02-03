@@ -20,6 +20,11 @@ def get_dermoscope_addition_pipeline(p: float = 0.5):
     return A.Compose([])
 
 
+def get_skin_tone_augmentation(p: float = 0.5):
+    """Placeholder for skin tone augmentation."""
+    return A.Compose([])
+
+
 def get_lighting_augmentation():
     """Simulate lighting and exposure variations (different exam rooms, cameras)."""
     return A.Compose([

@@ -25,7 +25,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 
 from src.model.embeddings import EmbeddingExtractor
 from src.model.triage import TriageSystem
-from src.utils.model_hub import download_model_from_hf, get_model_config
+from src.utils.model_hub import download_model_from_hf, download_e2e_model_from_hf, get_model_config
 
 app = FastAPI(title="SkinTag", description="AI-powered skin lesion triage screening tool")
 
@@ -64,17 +64,37 @@ async def load_models():
             model_config = get_model_config()
             repo_id = model_config["repo_id"]
 
-            # Download classifier
-            classifier_path = download_model_from_hf(
-                repo_id=repo_id,
-                filename=model_config["classifier_filename"],
-                cache_subdir="skintag"
-            )
-            with open(classifier_path, "rb") as f:
-                _state["classifier"] = pickle.load(f)
-            print(f"✓ Loaded classifier from HF: {classifier_path.name}")
+            # Try loading fine-tuned end-to-end model first (best accuracy)
+            try:
+                from src.model.deep_classifier import EndToEndClassifier
+                model_dir = download_e2e_model_from_hf(
+                    repo_id=repo_id,
+                    cache_subdir="skintag"
+                )
+                _state["e2e_model"] = EndToEndClassifier.load_for_inference(str(model_dir), device=device)
+                _state["inference_mode"] = "e2e"
+                print(f"✓ Loaded fine-tuned model from HF: {repo_id} (device={device})")
 
-            # Download condition classifier
+                # Still load embedding extractor for condition classifier
+                _state["extractor"] = EmbeddingExtractor(device=device)
+
+            except Exception as e:
+                print(f"E2E model not available, trying classifier files: {e}")
+
+                # Fall back to embedding extractor + classifier head
+                classifier_path = download_model_from_hf(
+                    repo_id=repo_id,
+                    filename=model_config["classifier_filename"],
+                    cache_subdir="skintag"
+                )
+                with open(classifier_path, "rb") as f:
+                    _state["classifier"] = pickle.load(f)
+                print(f"✓ Loaded classifier from HF: {classifier_path.name}")
+
+                _state["extractor"] = EmbeddingExtractor(device=device)
+                _state["inference_mode"] = "embedding+head"
+
+            # Download condition classifier (optional)
             try:
                 cond_path = download_model_from_hf(
                     repo_id=repo_id,
@@ -85,11 +105,9 @@ async def load_models():
                     _state["condition_classifier"] = pickle.load(f)
                 print(f"✓ Loaded condition classifier from HF: {cond_path.name}")
             except Exception as e:
-                print(f"Condition classifier not available on HF: {e}")
+                print(f"Condition classifier not available: {e}")
 
-            _state["extractor"] = EmbeddingExtractor(device=device)
-            _state["inference_mode"] = "embedding+head"
-            print(f"✓ Models loaded from Hugging Face (device={device})")
+            print(f"✓ Models loaded from Hugging Face (mode={_state['inference_mode']}, device={device})")
 
         except Exception as e:
             print(f"Failed to load from Hugging Face: {e}")

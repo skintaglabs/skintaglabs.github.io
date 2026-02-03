@@ -63,7 +63,7 @@ jobs:
         env:
           USE_HF_MODELS: true
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_REPO_ID: ${{ secrets.HF_REPO_ID || 'MedGemma540/skintag-models' }}
+          HF_REPO_ID: ${{ secrets.HF_REPO_ID || 'DTanzillo/MedGemma540' }}
         run: |
           python -c "from src.model.embeddings import EmbeddingExtractor; print('✓ Dependencies OK')"
 
@@ -76,7 +76,7 @@ jobs:
         env:
           USE_HF_MODELS: true
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_REPO_ID: ${{ secrets.HF_REPO_ID || 'MedGemma540/skintag-models' }}
+          HF_REPO_ID: ${{ secrets.HF_REPO_ID || 'DTanzillo/MedGemma540' }}
         run: |
           nohup python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > server.log 2>&1 &
           echo $! > server.pid

@@ -50,6 +50,46 @@ def download_model_from_hf(
     return Path(model_path)
 
 
+def download_e2e_model_from_hf(
+    repo_id: str,
+    cache_subdir: str = "models",
+    token: Optional[str] = None,
+) -> Path:
+    """Download end-to-end fine-tuned model directory from Hugging Face Hub.
+
+    Downloads all model files (config.json, model_state.pt, head_state.pt)
+    and returns the directory path.
+
+    Args:
+        repo_id: Hugging Face repository ID (e.g., "DTanzillo/MedGemma540")
+        cache_subdir: Subdirectory within HF_HOME for caching
+        token: Hugging Face API token (optional, for private repos)
+
+    Returns:
+        Path to the downloaded model directory
+    """
+    from huggingface_hub import snapshot_download
+
+    # Get cache directory
+    hf_home = os.getenv("HF_HOME", str(Path.home() / ".cache" / "huggingface"))
+    cache_dir = Path(hf_home) / cache_subdir
+
+    # Get token
+    token = token or os.getenv("HF_TOKEN")
+
+    print(f"Downloading fine-tuned model from {repo_id}...")
+
+    model_dir = snapshot_download(
+        repo_id=repo_id,
+        cache_dir=str(cache_dir),
+        token=token,
+        allow_patterns=["config.json", "model_state.pt", "head_state.pt"],
+    )
+
+    print(f"✓ Model downloaded to: {model_dir}")
+    return Path(model_dir)
+
+
 def get_model_config():
     """Get model repository configuration.
 
@@ -57,8 +97,7 @@ def get_model_config():
     or defaults for SkinTag models.
     """
     return {
-        "repo_id": os.getenv("HF_REPO_ID", "MedGemma540/skintag-models"),
+        "repo_id": os.getenv("HF_REPO_ID", "DTanzillo/MedGemma540"),
         "classifier_filename": os.getenv("HF_CLASSIFIER_FILE", "classifier_deep_mlp.pkl"),
         "condition_classifier_filename": os.getenv("HF_CONDITION_FILE", "classifier_condition.pkl"),
-        "e2e_model_dir": os.getenv("HF_E2E_MODEL", "finetuned_model"),
     }
