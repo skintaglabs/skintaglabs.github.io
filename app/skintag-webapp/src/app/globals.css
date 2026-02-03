@@ -1,0 +1,185 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Instrument+Serif:ital@0;1&display=swap');
+@import "tailwindcss";
+
+@theme inline {
+  --color-cream: #FAF7F2;
+  --color-warm-white: #FFFCF7;
+  --color-sage: #8B9D83;
+  --color-sage-light: #C4D1BE;
+  --color-sage-dark: #5A6B54;
+  --color-terracotta: #C4704B;
+  --color-terracotta-light: #E8A889;
+  --color-charcoal: #2C2C2C;
+  --color-charcoal-light: #4A4A4A;
+  --color-risk-low: #7BA05B;
+  --color-risk-medium: #E5A84B;
+  --color-risk-high: #D4644B;
+  --color-trust-blue: #5B8FA0;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--color-cream);
+  color: var(--color-charcoal);
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+.font-serif {
+  font-family: 'Instrument Serif', serif;
+}
+
+/* Organic blob shapes for background */
+.blob-shape {
+  position: absolute;
+  border-radius: 50% 40% 60% 50% / 50% 60% 40% 50%;
+  filter: blur(80px);
+  opacity: 0.4;
+  animation: blob-morph 20s ease-in-out infinite;
+}
+
+@keyframes blob-morph {
+  0%, 100% {
+    border-radius: 50% 40% 60% 50% / 50% 60% 40% 50%;
+    transform: rotate(0deg) scale(1);
+  }
+  25% {
+    border-radius: 60% 50% 40% 60% / 40% 50% 60% 50%;
+    transform: rotate(90deg) scale(1.05);
+  }
+  50% {
+    border-radius: 40% 60% 50% 40% / 60% 40% 50% 60%;
+    transform: rotate(180deg) scale(1);
+  }
+  75% {
+    border-radius: 50% 40% 60% 50% / 50% 60% 40% 50%;
+    transform: rotate(270deg) scale(0.95);
+  }
+}
+
+/* Scanning animation */
+@keyframes scan-line {
+  0% {
+    top: 0;
+  }
+  100% {
+    top: 100%;
+  }
+}
+
+.scan-line {
+  animation: scan-line 2s ease-in-out infinite;
+}
+
+/* Pulse ring animation */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+}
+
+.pulse-ring {
+  animation: pulse-ring 2s ease-in-out infinite;
+}
+
+/* Progress fill animation */
+@keyframes progress-fill {
+  0% {
+    width: 0%;
+  }
+}
+
+/* Grain texture overlay */
+.grain-overlay::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-cream);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-sage-light);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-sage);
+}
+
+/* Camera viewfinder corners */
+.viewfinder-corner {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-color: var(--color-sage);
+  border-width: 3px;
+}
+
+.viewfinder-tl {
+  top: 0;
+  left: 0;
+  border-style: solid none none solid;
+  border-radius: 8px 0 0 0;
+}
+
+.viewfinder-tr {
+  top: 0;
+  right: 0;
+  border-style: solid solid none none;
+  border-radius: 0 8px 0 0;
+}
+
+.viewfinder-bl {
+  bottom: 0;
+  left: 0;
+  border-style: none none solid solid;
+  border-radius: 0 0 0 8px;
+}
+
+.viewfinder-br {
+  bottom: 0;
+  right: 0;
+  border-style: none solid solid none;
+  border-radius: 0 0 8px 0;
+}
+
+/* Safe area padding for mobile */
+.safe-area-bottom {
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+}
+
+.safe-area-top {
+  padding-top: max(1rem, env(safe-area-inset-top));
+}
