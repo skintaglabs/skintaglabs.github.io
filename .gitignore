@@ -86,3 +86,4 @@ huggingface_space/
 # OS
 .DS_Store
 Thumbs.db
+public/app/
