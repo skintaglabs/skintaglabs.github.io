@@ -77,7 +77,6 @@ jobs:
           USE_HF_MODELS: true
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO_ID: ${{ secrets.HF_REPO_ID || 'DTanzillo/MedGemma540' }}
-          SKINTAG_API_KEY: ${{ secrets.SKINTAG_API_KEY }}
         run: |
           nohup python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > server.log 2>&1 &
           echo $! > server.pid

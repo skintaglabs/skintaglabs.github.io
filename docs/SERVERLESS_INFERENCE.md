@@ -19,22 +19,6 @@ cloudflared tunnel token skintag-inference | gh secret set SKINTAG_TUNNEL_TOKEN
 
 Then run: Actions → Deploy Inference Server → Run workflow
 
-## API Authentication
-
-Set `SKINTAG_API_KEY` environment variable to require API key:
-
-```bash
-export SKINTAG_API_KEY=your_secret_key
-make app
-```
-
-Clients must include header:
-```
-X-API-Key: your_secret_key
-```
-
-If not set, API is public (demo mode).
-
 ## Features
 
 - Free (2000 min/month)

@@ -68,7 +68,6 @@ kaggle.json
 # Environment / secrets
 .env
 .env.*
-!.env.example
 *.secret
 
 # Claude Code settings

@@ -19,8 +19,7 @@ import yaml
 import torch
 import numpy as np
 from PIL import Image
-from fastapi import FastAPI, UploadFile, File, HTTPException, Security, Depends
-from fastapi.security import APIKeyHeader
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse
 
@@ -29,28 +28,6 @@ from src.model.triage import TriageSystem
 from src.utils.model_hub import download_model_from_hf, download_e2e_model_from_hf, get_model_config
 
 app = FastAPI(title="SkinTag", description="AI-powered skin lesion triage screening tool")
-
-# API Key authentication
-API_KEY_NAME = "X-API-Key"
-api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
-
-def get_api_key(api_key: str = Security(api_key_header)) -> str:
-    """Validate API key if SKINTAG_API_KEY is set."""
-    required_key = os.getenv("SKINTAG_API_KEY")
-
-    # If no API key configured, allow all requests
-    if not required_key:
-        return None
-
-    # API key required but not provided
-    if not api_key:
-        raise HTTPException(status_code=401, detail="API key required")
-
-    # Invalid API key
-    if api_key != required_key:
-        raise HTTPException(status_code=403, detail="Invalid API key")
-
-    return api_key
 
 # Global state (loaded on startup)
 _state = {
@@ -190,10 +167,7 @@ async def cleanup():
 
 
 @app.post("/api/analyze")
-async def analyze_image(
-    file: UploadFile = File(...),
-    api_key: str = Depends(get_api_key)
-):
+async def analyze_image(file: UploadFile = File(...)):
     """Analyze an uploaded skin lesion image.
 
     Returns triage assessment with risk score, urgency tier, recommendation.

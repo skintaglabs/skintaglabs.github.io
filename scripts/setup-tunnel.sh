@@ -79,13 +79,6 @@ if [ -n "$HF_TOKEN" ]; then
     echo "$HF_TOKEN" | gh secret set HF_TOKEN --repo="$REPO"
 fi
 
-# Generate and set API key
-echo ""
-echo "Generating API key for inference endpoint..."
-API_KEY=$(openssl rand -hex 32)
-echo "$API_KEY" | gh secret set SKINTAG_API_KEY --repo="$REPO"
-echo "API key generated and saved to GitHub secrets"
-
 echo ""
 echo "=== Setup Complete ==="
 echo ""
