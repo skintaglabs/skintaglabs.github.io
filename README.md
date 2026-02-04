@@ -60,7 +60,7 @@ python -m http.server 8080
 
 Fine-tuned from `google/siglip-so400m-patch14-384` (878M parameters).
 
-Model hosted at [DTanzillo/MedGemma540](https://huggingface.co/DTanzillo/MedGemma540).
+Model hosted at [skintaglabs/siglip-skin-lesion-classifier](https://huggingface.co/skintaglabs/siglip-skin-lesion-classifier).
 
 ## Architecture
 
@@ -116,6 +116,36 @@ huggingface-cli upload YourOrg/YourModel . --repo-type model
 Detailed technical writeup: [writeup/main.tex](writeup/main.tex)
 
 NeurIPS-style paper with full methodology, results, and fairness analysis.
+
+## Citation
+
+If you use this work, please cite:
+
+```bibtex
+@misc{skintag2026,
+  title={SkinTag: Multi-Dataset, Domain-Robust, Fairness-Aware Skin Lesion Triage},
+  author={SkinTag Labs},
+  year={2026},
+  url={https://github.com/skintaglabs/main}
+}
+```
+
+**Base model (SigLIP):**
+```bibtex
+@misc{zhai2023sigmoid,
+  title={Sigmoid Loss for Language Image Pre-Training},
+  author={Xiaohua Zhai and Basil Mustafa and Alexander Kolesnikov and Lucas Beyer},
+  year={2023},
+  eprint={2303.15343},
+  archivePrefix={arXiv},
+  primaryClass={cs.CV}
+}
+```
+
+## Acknowledgments
+
+- **Base Model:** [SigLIP](https://huggingface.co/google/siglip-so400m-patch14-384) by Google (Apache 2.0)
+- **Datasets:** HAM10000, DDI (Stanford), Fitzpatrick17k, PAD-UFES-20, BCN20000
 
 ## License
 

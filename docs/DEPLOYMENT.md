@@ -6,7 +6,7 @@ Quick guide to deploying SkinTag.
 
 1. **Hugging Face token** (required - repo is gated)
    - Get token: https://huggingface.co/settings/tokens
-   - Accept repo terms: https://huggingface.co/DTanzillo/MedGemma540
+   - Accept repo terms: https://huggingface.co/skintaglabs/siglip-skin-lesion-classifier
 
 2. **Add GitHub secrets**:
    ```bash

@@ -62,7 +62,7 @@ def download_e2e_model_from_hf(
     and returns the directory path.
 
     Args:
-        repo_id: Hugging Face repository ID (e.g., "DTanzillo/MedGemma540")
+        repo_id: Hugging Face repository ID (e.g., "skintaglabs/siglip-skin-lesion-classifier")
         cache_subdir: Subdirectory within HF_HOME for caching
         token: Hugging Face API token (optional, for private repos)
 
@@ -89,7 +89,7 @@ def get_model_config():
     or defaults for SkinTag models.
     """
     return {
-        "repo_id": os.getenv("HF_REPO_ID", "DTanzillo/MedGemma540"),
+        "repo_id": os.getenv("HF_REPO_ID", "skintaglabs/siglip-skin-lesion-classifier"),
         "classifier_filename": os.getenv("HF_CLASSIFIER_FILE", "Misc/classifier_deep_mlp.pkl"),
         "condition_classifier_filename": os.getenv("HF_CONDITION_FILE", "Misc/classifier_condition.pkl"),
     }

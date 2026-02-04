@@ -1,6 +1,6 @@
 # Model Hosting
 
-Fine-tuned model hosted at [DTanzillo/MedGemma540](https://huggingface.co/DTanzillo/MedGemma540).
+Fine-tuned model hosted at [skintaglabs/siglip-skin-lesion-classifier](https://huggingface.co/skintaglabs/siglip-skin-lesion-classifier).
 
 ## Download Models
 
@@ -27,5 +27,5 @@ huggingface-cli upload YourOrg/YourModel . --repo-type model
 ## Config
 
 - `USE_HF_MODELS=true` - Enable HF downloads
-- `HF_REPO_ID` - Override repo (default: `DTanzillo/MedGemma540`)
+- `HF_REPO_ID` - Override repo (default: `skintaglabs/siglip-skin-lesion-classifier`)
 - `HF_TOKEN` - For private repos

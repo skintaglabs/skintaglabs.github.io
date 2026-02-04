@@ -1,6 +1,9 @@
 import { toast } from 'sonner'
+import { useImageQuality } from './useImageQuality'
 
 export function useImageValidation() {
+  const { analyzeQuality } = useImageQuality()
+
   const validateImage = async (file: File): Promise<boolean> => {
     if (!file.type.startsWith('image/')) {
       toast.error('Please select an image file')
@@ -36,6 +39,33 @@ export function useImageValidation() {
         }
         image.src = url
       })
+
+      // Analyze image quality
+      try {
+        const toastId = toast.loading('Checking image quality...')
+        const quality = await analyzeQuality(file)
+        toast.dismiss(toastId)
+
+        if (!quality.passed) {
+          const primaryIssue = quality.issues[0] || 'Image quality is insufficient'
+          toast.error(primaryIssue, {
+            description: quality.issues.length > 1
+              ? `Also: ${quality.issues.slice(1).join(', ')}`
+              : 'Try retaking with better lighting and focus'
+          })
+          return false
+        }
+
+        if (quality.score < 70) {
+          toast.warning('Image quality could be better', {
+            description: quality.issues.join(', ')
+          })
+        } else if (quality.score >= 85) {
+          toast.success('Image quality looks good!')
+        }
+      } catch (error) {
+        console.warn('Quality analysis failed, proceeding without validation:', error)
+      }
 
       return true
     } catch {
