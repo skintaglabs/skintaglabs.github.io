@@ -96,6 +96,26 @@ body::before {
     font-size: 17px;
     line-height: 32px;
     transition: background-color 0.3s ease, color 0.3s ease;
+    background-image: url('/background.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-color: var(--color-bg);
+    opacity: 0.85;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #root {
+    position: relative;
+    z-index: 1;
   }
 }
 
