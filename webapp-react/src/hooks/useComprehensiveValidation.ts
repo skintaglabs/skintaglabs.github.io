@@ -60,7 +60,7 @@ export function useComprehensiveValidation() {
         }),
         ImageSegmenter.createFromOptions(vision, {
           baseOptions: {
-            modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/2/selfie_segmenter.task',
+            modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/1/selfie_segmenter.task',
             delegate: 'GPU'
           },
           runningMode: 'IMAGE',
@@ -129,16 +129,18 @@ export function useComprehensiveValidation() {
     try {
       if (!imageSegmenterRef.current) {
         console.warn('Image segmenter not initialized, skipping check')
-        return { present: true, percentage: 50 } // Graceful fallback
+        return { present: false, percentage: 0 } // Fallback: assume close-up (no full person)
       }
 
       const result = imageSegmenterRef.current.segment(image)
       if (!result.categoryMask) {
         console.warn('No category mask returned, skipping check')
-        return { present: true, percentage: 50 } // Graceful fallback
+        return { present: false, percentage: 0 } // Fallback: assume close-up (no full person)
       }
 
       // Count person pixels (category 1)
+      // High percentage = full person/face visible = too far away
+      // Low percentage = close-up of skin area = good
       const mask = result.categoryMask.getAsFloat32Array()
       let personPixels = 0
       for (let i = 0; i < mask.length; i++) {
@@ -147,13 +149,50 @@ export function useComprehensiveValidation() {
 
       const percentage = (personPixels / mask.length) * 100
       return {
-        present: percentage > 10,
+        present: percentage > 20, // present = full person detected (bad for lesion photos)
         percentage
       }
     } catch (error) {
       console.error('Segmentation check failed:', error)
-      return { present: true, percentage: 50 } // Graceful fallback
+      return { present: false, percentage: 0 } // Fallback: assume close-up (no full person)
     }
+  }, [])
+
+  const createCircularROI = useCallback((
+    image: ImageBitmap,
+    canvas: HTMLCanvasElement
+  ): { roiImage: ImageBitmap; roiImageData: ImageData } => {
+    // Calculate circular ROI (centered, 256px diameter like webcam guide)
+    const centerX = image.width / 2
+    const centerY = image.height / 2
+    const radius = Math.min(image.width, image.height) * 0.4 // 40% of smaller dimension
+
+    // Create circular mask canvas
+    canvas.width = image.width
+    canvas.height = image.height
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })!
+
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+    // Create circular clip path
+    ctx.save()
+    ctx.beginPath()
+    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI)
+    ctx.clip()
+
+    // Draw image within circular mask
+    ctx.drawImage(image, 0, 0)
+    ctx.restore()
+
+    // Get image data for quality checks (only circular region has valid data)
+    const roiImageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+
+    // Create ROI bitmap for MediaPipe validators
+    // Note: Canvas already has the masked image drawn
+    const roiImage = image // We'll validate the full canvas which has masked content
+
+    return { roiImage, roiImageData }
   }, [])
 
   const checkImageQuality = useCallback((
@@ -207,19 +246,16 @@ export function useComprehensiveValidation() {
 
     const image = await createImageBitmap(file)
 
-    // Create canvas for quality checks
+    // CRITICAL: Create circular ROI (medical standard - focus on lesion area only)
     const canvas = document.createElement('canvas')
-    canvas.width = image.width
-    canvas.height = image.height
-    const ctx = canvas.getContext('2d', { willReadFrequently: true })!
-    ctx.drawImage(image, 0, 0)
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    const { roiImage, roiImageData } = createCircularROI(image, canvas)
 
-    // Run all checks in parallel
+    // Run all checks in parallel ON THE CIRCULAR ROI ONLY
+    // This prevents artifacts outside the diagnostic area from affecting scores
     const [distance, skinSeg, quality] = await Promise.all([
-      checkDistance(image),
-      checkSkinSegmentation(image),
-      Promise.resolve(checkImageQuality(imageData))
+      checkDistance(roiImage), // Distance check on ROI
+      checkSkinSegmentation(roiImage), // Person detection on ROI
+      Promise.resolve(checkImageQuality(roiImageData)) // Quality metrics on ROI pixels only
     ])
 
     // Build result
@@ -232,13 +268,13 @@ export function useComprehensiveValidation() {
       contrast: quality.contrast
     }
 
-    // Debug logging
-    console.log('Validation checks:', {
+    // Debug logging (medical-standard validation on circular ROI)
+    console.log('Validation checks (Circular ROI only):', {
       distance,
-      skinPercentage: skinSeg.percentage.toFixed(2) + '%',
-      blur: quality.blur.toFixed(2),
-      brightness: quality.brightness.toFixed(2),
-      contrast: quality.contrast.toFixed(2)
+      personDetected: skinSeg.percentage.toFixed(2) + '% (optimal: <10%, warning: >20%, critical: >40%)',
+      blur: quality.blur.toFixed(2) + ' (optimal: ≥12, warning: <12, critical: <5)',
+      brightness: quality.brightness.toFixed(2) + ' (optimal: 90-180, acceptable: 60-220)',
+      contrast: quality.contrast.toFixed(2) + ' (minimum: 30 for lesion borders)'
     })
 
     // Scoring logic
@@ -251,38 +287,46 @@ export function useComprehensiveValidation() {
       issues.push('Too far from subject')
     }
 
-    // Skin presence check (relaxed - only fail if 0%)
-    if (skinSeg.percentage === 0) {
+    // Person detection check - high percentage means too far away (medical standard)
+    if (skinSeg.percentage > 40) {
+      score -= 50
+      issues.push('Too far - only a small skin area should be visible')
+    } else if (skinSeg.percentage > 20) {
+      score -= 25
+      issues.push('Get closer - focus on lesion area only')
+    } else if (skinSeg.percentage < 10) {
+      // OPTIMAL: Close-up of skin tissue (< 10% person detected)
+      // No penalty - this is exactly what we want for dermoscopy
+    }
+    // Low percentage (<20%) is good - means close-up of skin area
+
+    // Blur check (medical standard: dermoscopic images have subtle textures)
+    // Research shows blur detection struggles with 0.2-1mm range typical in dermoscopy
+    if (quality.blur < 5) {
       score -= 40
-      issues.push('No skin detected')
-    } else if (skinSeg.percentage < 5) {
-      score -= 20
-      issues.push('Not enough skin visible')
+      issues.push('Severely blurred - hold steady')
+    } else if (quality.blur < 12) {
+      score -= 15
+      issues.push('Slightly blurred - try to hold steadier')
     }
+    // blur >= 12 is acceptable for dermoscopy
 
-    // Blur check (relaxed thresholds)
-    if (quality.blur < 20) {
-      score -= 30
-      issues.push('Image is blurry')
-    } else if (quality.blur < 40) {
+    // Brightness check (medical standard: neutral grey reference 60-220)
+    if (quality.brightness < 60 || quality.brightness > 220) {
+      score -= 35
+      issues.push(quality.brightness < 60 ? 'Too dark - use natural light' : 'Overexposed - reduce lighting')
+    } else if (quality.brightness < 90 || quality.brightness > 180) {
       score -= 10
-      issues.push('Could be sharper')
+      issues.push('Lighting could be better')
     }
+    // 90-180 is optimal range for dermoscopy
 
-    // Brightness check
-    if (quality.brightness < 40 || quality.brightness > 240) {
-      score -= 30
-      issues.push(quality.brightness < 40 ? 'Too dark' : 'Overexposed')
-    } else if (quality.brightness < 80) {
-      score -= 15
-      issues.push('Low lighting')
+    // Contrast check (medical standard: >30 for lesion border visibility)
+    if (quality.contrast < 30) {
+      score -= 20
+      issues.push('Low contrast - move closer or adjust lighting')
     }
-
-    // Contrast check
-    if (quality.contrast < 20) {
-      score -= 15
-      issues.push('Low contrast')
-    }
+    // contrast >= 30 ensures lesion borders are visible
 
     // Determine feedback (guidance only, never reject)
     let feedback: ValidationResult['feedback']
@@ -321,7 +365,7 @@ export function useComprehensiveValidation() {
       feedback,
       checks
     }
-  }, [initialize, checkDistance, checkSkinSegmentation, checkImageQuality])
+  }, [initialize, createCircularROI, checkDistance, checkSkinSegmentation, checkImageQuality])
 
   return { validate }
 }

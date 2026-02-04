@@ -10,12 +10,32 @@ export async function downloadResultsAsImage(elementId: string): Promise<void> {
     backgroundColor: '#f6f4f0',
     scale: 2,
     logging: false,
-    useCORS: true
+    useCORS: true,
+    allowTaint: true,
+    onclone: (clonedDoc) => {
+      // Add fallback CSS to override oklch colors
+      const style = clonedDoc.createElement('style')
+      style.textContent = `
+        * {
+          --color-text: #1a1a1a !important;
+          --color-text-muted: #666666 !important;
+          --color-surface: #ffffff !important;
+          --color-border: #e5e5e5 !important;
+          --color-accent-warm: #ea580c !important;
+          --color-accent-cool: #0891b2 !important;
+        }
+      `
+      clonedDoc.head.appendChild(style)
+    }
   })
 
-  const blob = await new Promise<Blob>((resolve) => {
+  const blob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((blob) => {
-      if (blob) resolve(blob)
+      if (blob) {
+        resolve(blob)
+      } else {
+        reject(new Error('Failed to create blob from canvas'))
+      }
     }, 'image/png')
   })
 

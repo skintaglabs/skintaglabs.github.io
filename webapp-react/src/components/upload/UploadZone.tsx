@@ -53,7 +53,7 @@ export function UploadZone({ onFileSelect }: UploadZoneProps) {
         relative border-2 border-dashed rounded-[var(--radius-lg)] p-12
         transition-all duration-[var(--duration-normal)]
         ${isDragOver
-          ? 'border-[var(--color-accent-warm)] bg-[var(--color-surface-alt)] scale-[1.02]'
+          ? 'border-[var(--color-accent-warm)] bg-[var(--color-surface-alt)] scale-[1.02] drag-over-pulse'
           : 'border-[var(--color-border)] bg-[var(--color-surface)]'
         }
       `}
@@ -71,7 +71,7 @@ export function UploadZone({ onFileSelect }: UploadZoneProps) {
           transition-colors duration-[var(--duration-normal)]
           ${isDragOver ? 'bg-[var(--color-accent-warm)]' : 'bg-[var(--color-surface-alt)]'}
         `}>
-          <Upload className={`w-8 h-8 ${isDragOver ? 'text-[var(--color-surface)]' : 'text-[var(--color-text-muted)]'}`} />
+          <Upload className={`w-8 h-8 ${isDragOver ? 'text-[var(--color-surface)]' : 'text-[var(--color-text-muted)] upload-icon-idle'}`} />
         </div>
         <div className="text-center">
           <p className="text-[17px] font-medium mb-1">Drop your image here or click to browse</p>

@@ -122,7 +122,7 @@ export function HandOverlay({ videoElement, landmarks, state }: HandOverlayProps
     <canvas
       ref={canvasRef}
       className="absolute inset-0 w-full h-full pointer-events-none"
-      style={{ objectFit: 'cover' }}
+      style={{ objectFit: 'cover', transform: 'scaleX(-1)' }}
     />
   )
 }

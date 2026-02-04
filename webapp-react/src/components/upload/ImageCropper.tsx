@@ -63,6 +63,17 @@ export function ImageCropper({ imageUrl, onCropComplete, onCancel }: ImageCroppe
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onCancel()
+      }
+    }
+
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [onCancel])
+
   const onCropChange = useCallback((crop: { x: number; y: number }) => {
     setCrop(crop)
   }, [])

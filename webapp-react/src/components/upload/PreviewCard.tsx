@@ -25,13 +25,13 @@ export function PreviewCard({ file, previewUrl, onClear, onAnalyze, onCrop }: Pr
   return (
     <>
       <div className="fixed inset-0 z-[100] bg-[var(--color-text)]/40" onClick={onClear} />
-      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col">
+      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col animate-fadeUp">
         <div className="bg-[var(--color-surface)] rounded-[var(--radius-lg)] overflow-hidden shadow-[var(--shadow-lg)] flex flex-col max-h-[90vh]">
           <div className="relative bg-[var(--color-surface-alt)] flex items-center justify-center" style={{ height: '400px' }}>
             <img
               src={previewUrl}
               alt="Preview"
-              className="max-w-full max-h-full object-contain"
+              className="max-w-full max-h-full object-contain preview-image"
             />
             <button
               onClick={onClear}

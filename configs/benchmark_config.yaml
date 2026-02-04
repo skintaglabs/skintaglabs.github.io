@@ -1,0 +1,50 @@
+# Benchmark Configuration
+# Controls which models to benchmark and what analyses to run
+
+models_to_benchmark:
+  - baseline_majority
+  - baseline_random
+  - logistic_frozen
+  - xgboost_frozen
+  - deep_frozen
+  - xgboost_finetuned
+
+run_robustness_tests: false
+run_fairness_analysis: true
+run_cross_domain: false
+track_history: true
+
+performance_thresholds:
+  min_accuracy: 0.85
+  min_f1_macro: 0.80
+  min_auc: 0.90
+  max_fairness_gap: 0.10
+  max_equalized_odds_gap: 0.15
+
+fairness_groups:
+  - fitzpatrick
+  - domain
+  - dataset
+
+distortion_tests:
+  enabled: false
+  distortions:
+    - blur_light
+    - blur_heavy
+    - noise_light
+    - brightness_dark
+    - compression_light
+    - combined_realistic
+  subset_size: 1000
+
+reporting:
+  generate_markdown: true
+  generate_json: true
+  create_plots: false
+  save_predictions: false
+
+historical_tracking:
+  enabled: true
+  regression_detection: true
+  alert_on_degradation: true
+  min_performance_drop: 0.01

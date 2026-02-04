@@ -2,6 +2,12 @@
 
 AI-powered skin lesion triage for early melanoma detection, designed for equitable healthcare access.
 
+[![Deploy Frontend](https://github.com/skintaglabs/main/actions/workflows/deploy-webapp.yml/badge.svg)](https://github.com/skintaglabs/main/actions/workflows/deploy-webapp.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Model on HF](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Model-yellow)](https://huggingface.co/skintaglabs/siglip-skin-lesion-classifier)
+[![Live Demo](https://img.shields.io/badge/demo-live-success)](https://skintaglabs.github.io/main/)
+
 ## Overview
 
 SkinTag provides preliminary screening for skin lesions using a fine-tuned SigLIP vision model. The system:
@@ -9,8 +15,6 @@ SkinTag provides preliminary screening for skin lesions using a fine-tuned SigLI
 - Estimates specific skin conditions (10-class)
 - Provides actionable recommendations
 - Works on mobile devices with camera support
-
-**Live demo:** https://skintaglabs.github.io/main/
 
 ## Key Features
 

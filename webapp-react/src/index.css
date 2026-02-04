@@ -107,11 +107,13 @@
     content: '';
     position: fixed;
     inset: 0;
-    background-image: url('/background.jpg');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-    background-repeat: no-repeat;
+    background-image:
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E"),
+      url('/background.jpg');
+    background-size: 200px 200px, cover;
+    background-position: 0 0, center;
+    background-attachment: fixed, fixed;
+    background-repeat: repeat, no-repeat;
     filter: blur(2px) brightness(1.03) contrast(0.98);
     transform: scale(1.02);
     z-index: -2;
@@ -183,4 +185,143 @@
     var(--color-surface) 50%,
     var(--color-surface-alt) 100%
   );
+  background-size: 200% 100%;
+}
+
+/* Apple Award-Winning Enhancements */
+
+/* 1. Staggered Results Animation */
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.result-item {
+  animation: slideUpFade 0.5s var(--ease-spring) both;
+}
+
+.result-item:nth-child(1) { animation-delay: 0.05s; }
+.result-item:nth-child(2) { animation-delay: 0.15s; }
+.result-item:nth-child(3) { animation-delay: 0.25s; }
+.result-item:nth-child(4) { animation-delay: 0.35s; }
+.result-item:nth-child(5) { animation-delay: 0.45s; }
+.result-item:nth-child(6) { animation-delay: 0.55s; }
+
+/* 2. Organic Texture - Applied via body::before above */
+
+/* 3. Upload Zone Breathing Animation */
+@keyframes breathe {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.7;
+  }
+}
+
+.upload-icon-idle {
+  animation: breathe 3s ease-in-out infinite;
+}
+
+/* 4. Enhanced Analyzing Shimmer */
+@keyframes shimmerPulse {
+  0% {
+    background-position: -1000px 0;
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    background-position: 1000px 0;
+    opacity: 0.6;
+  }
+}
+
+.analyzing-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-alt) 0%,
+    var(--color-border) 20%,
+    var(--color-surface-alt) 40%,
+    var(--color-surface-alt) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmerPulse 2s linear infinite;
+}
+
+:root.dark .analyzing-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-alt) 0%,
+    var(--color-surface) 20%,
+    var(--color-surface-alt) 40%,
+    var(--color-surface-alt) 100%
+  );
+  background-size: 1000px 100%;
+}
+
+/* 5. Button Press Micro-interaction */
+button {
+  transition: transform 0.15s var(--ease-spring);
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* 6. Image Preview Reveal Animation */
+@keyframes imageReveal {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+.preview-image {
+  animation: imageReveal 0.6s var(--ease-spring);
+}
+
+/* 7. Pulse Animation for Active States */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* 8. Enhanced Drag Over State */
+@keyframes dragPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 var(--color-accent-warm);
+  }
+  50% {
+    transform: scale(1.01);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-accent-warm) 20%, transparent);
+  }
+}
+
+.drag-over-pulse {
+  animation: dragPulse 1s ease-in-out infinite;
 }

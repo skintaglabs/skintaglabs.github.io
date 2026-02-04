@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react'
+import { type ReactNode, useEffect } from 'react'
 import { X } from 'lucide-react'
 
 interface ResultsContainerProps {
@@ -8,6 +8,19 @@ interface ResultsContainerProps {
 }
 
 export function ResultsContainer({ showResults, children, onClose }: ResultsContainerProps) {
+  useEffect(() => {
+    if (!showResults) return
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [showResults, onClose])
+
   if (!showResults) return null
 
   return (

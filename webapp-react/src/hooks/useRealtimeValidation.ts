@@ -108,25 +108,18 @@ export function useRealtimeValidation() {
             distance = 'good'
           }
         } else {
-          suggestions.push('Show your hand or skin')
+          // No hand detected - might be facial lesion or other body part
+          // Don't penalize, just inform
+          suggestions.push('Position the lesion in the circle')
         }
       } catch (error) {
         console.warn('Hand detection frame failed:', error)
       }
     }
 
-    // Check for body pose (if no hand detected)
-    if (!handDetected && poseLandmarkerRef.current && video.readyState >= 2) {
-      try {
-        const poseResults = poseLandmarkerRef.current.detectForVideo(video, timestamp)
-        if (poseResults.landmarks && poseResults.landmarks.length > 0) {
-          suggestions.push('Body detected - get much closer to the specific lesion')
-          distance = 'too_far'
-        }
-      } catch (error) {
-        console.warn('Pose detection frame failed:', error)
-      }
-    }
+    // Pose detection removed - caused false negatives for facial lesions
+    // For facial/neck lesions, showing the face is unavoidable and correct
+    // Focus on practical checks: hand distance, blur, brightness
 
     // Quick blur estimate
     const canvas = document.createElement('canvas')
@@ -178,12 +171,14 @@ export function useRealtimeValidation() {
       suggestions.push('Try to hold steady')
     }
 
-    // Ready to capture based on distance and brightness only
-    // Blur varies too much across webcams to be a hard requirement
+    // Ready to capture based on distance and brightness
+    // Allow 'unknown' distance for facial/body lesions where hand isn't visible
+    // Blur varies too much across webcams to be informational only
     const readyToCapture =
-      distance === 'good' &&
+      (distance === 'good' || distance === 'unknown') &&
       brightness >= 50 &&
-      brightness <= 230
+      brightness <= 230 &&
+      blur >= 3 // Minimum blur threshold - must not be severely blurred
 
     return {
       distance,

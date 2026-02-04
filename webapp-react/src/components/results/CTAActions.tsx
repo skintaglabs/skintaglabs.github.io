@@ -36,7 +36,10 @@ export function CTAActions({ tier, results, onAnalyzeAnother }: CTAActionsProps)
       await downloadResultsAsImage('results-capture')
       toast.success('Results saved as image')
     } catch (error) {
-      toast.error('Failed to save image')
+      console.error('Download error:', error)
+      toast.error('Failed to save image', {
+        description: error instanceof Error ? error.message : 'Unknown error'
+      })
     }
   }
 
