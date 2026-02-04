@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Camera, CheckCircle, Sun, Image as ImageIcon } from 'lucide-react'
@@ -59,56 +60,80 @@ export function OnboardingModal() {
 
   const currentTip = tips[currentStep]
   const Icon = currentTip.icon
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  const content = (
+    <div className="flex flex-col">
+      <div className="flex flex-col items-center text-center px-4 py-8">
+        <div className="w-16 h-16 rounded-full bg-[var(--color-surface-alt)] flex items-center justify-center mb-6">
+          <Icon className="w-8 h-8 text-[var(--color-accent-warm)]" />
+        </div>
+
+        <h2 className="text-[22px] leading-tight font-semibold mb-3" style={{ fontFamily: "'Instrument Serif', serif" }}>
+          {currentTip.title}
+        </h2>
+
+        <p className="text-[15px] text-[var(--color-text-secondary)] leading-relaxed max-w-sm">
+          {currentTip.description}
+        </p>
+
+        <div className="flex gap-2 mt-6">
+          {tips.map((_, index) => (
+            <div
+              key={index}
+              className={`h-1.5 rounded-full transition-all ${
+                index === currentStep
+                  ? 'w-8 bg-[var(--color-accent-warm)]'
+                  : 'w-1.5 bg-[var(--color-border)]'
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="flex gap-3 px-4 pb-4">
+        {currentStep < tips.length - 1 ? (
+          <>
+            <Button onClick={handleSkip} variant="ghost" className="flex-1">
+              Skip
+            </Button>
+            <Button onClick={handleNext} className="flex-1">
+              Next
+            </Button>
+          </>
+        ) : (
+          <Button onClick={handleClose} className="w-full">
+            Get Started
+          </Button>
+        )}
+      </div>
+    </div>
+  )
+
+  if (isMobile) {
+    return (
+      <Sheet open={isOpen} onOpenChange={setIsOpen}>
+        <SheetContent>
+          <div className="h-full flex flex-col justify-center">
+            {content}
+          </div>
+        </SheetContent>
+      </Sheet>
+    )
+  }
 
   return (
-    <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetContent className="sm:max-w-md sm:mx-auto sm:my-auto sm:h-auto sm:rounded-[var(--radius-lg)]">
-        <div className="flex flex-col h-full sm:h-auto">
-          <div className="flex-1 flex flex-col items-center justify-center text-center px-4 py-8 sm:py-12">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[var(--color-surface-alt)] flex items-center justify-center mb-6">
-              <Icon className="w-8 h-8 sm:w-10 sm:h-10 text-[var(--color-accent-warm)]" />
-            </div>
-
-            <h2 className="text-[22px] sm:text-[24px] leading-tight font-semibold mb-3" style={{ fontFamily: "'Instrument Serif', serif" }}>
-              {currentTip.title}
-            </h2>
-
-            <p className="text-[15px] sm:text-[16px] text-[var(--color-text-secondary)] leading-relaxed max-w-sm">
-              {currentTip.description}
-            </p>
-
-            <div className="flex gap-2 mt-6">
-              {tips.map((_, index) => (
-                <div
-                  key={index}
-                  className={`h-1.5 rounded-full transition-all ${
-                    index === currentStep
-                      ? 'w-8 bg-[var(--color-accent-warm)]'
-                      : 'w-1.5 bg-[var(--color-border)]'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="flex gap-3 p-4 sm:p-6">
-            {currentStep < tips.length - 1 ? (
-              <>
-                <Button onClick={handleSkip} variant="ghost" className="flex-1">
-                  Skip
-                </Button>
-                <Button onClick={handleNext} className="flex-1">
-                  Next
-                </Button>
-              </>
-            ) : (
-              <Button onClick={handleClose} className="w-full">
-                Get Started
-              </Button>
-            )}
-          </div>
-        </div>
-      </SheetContent>
-    </Sheet>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogContent className="max-w-md">
+        {content}
+      </DialogContent>
+    </Dialog>
   )
 }
