@@ -150,11 +150,7 @@ function AppContent() {
                 />
               )}
 
-              {state.isAnalyzing && (
-                <div className="max-w-2xl mx-auto">
-                  <SkeletonResults />
-                </div>
-              )}
+              {state.isAnalyzing && <SkeletonResults />}
 
               {state.results && (
                 <ResultsContainer showResults={state.showResults} onClose={handleCloseResults}>

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { X, FileImage, Crop } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { formatFileSize } from '@/lib/utils'
 
 interface PreviewCardProps {
@@ -24,21 +23,21 @@ export function PreviewCard({ file, previewUrl, onClear, onAnalyze, onCrop }: Pr
   }, [previewUrl])
 
   return (
-    <Card className="overflow-hidden">
-      <div className="relative aspect-[4/3] bg-[var(--color-surface-alt)]">
+    <div className="fixed inset-0 z-[100] bg-[var(--color-bg)] flex flex-col">
+      <div className="flex-1 flex items-center justify-center bg-[var(--color-surface-alt)] relative">
         <img
           src={previewUrl}
           alt="Preview"
-          className="w-full h-full object-contain"
+          className="max-w-full max-h-full object-contain"
         />
         <button
           onClick={onClear}
-          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-[var(--color-text)]/80 hover:bg-[var(--color-text)] text-[var(--color-surface)] flex items-center justify-center transition-colors"
+          className="absolute top-4 right-4 w-10 h-10 rounded-full bg-[var(--color-text)]/80 hover:bg-[var(--color-text)] text-[var(--color-surface)] flex items-center justify-center transition-colors"
         >
-          <X className="w-4 h-4" />
+          <X className="w-5 h-5" />
         </button>
       </div>
-      <div className="p-4 space-y-3">
+      <div className="bg-[var(--color-surface)] border-t border-[var(--color-border)] p-6 space-y-4 safe-area-pb">
         <div className="flex items-start gap-3">
           <FileImage className="w-5 h-5 text-[var(--color-text-muted)] flex-shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
@@ -59,6 +58,6 @@ export function PreviewCard({ file, previewUrl, onClear, onAnalyze, onCrop }: Pr
           </Button>
         </div>
       </div>
-    </Card>
+    </div>
   )
 }

@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react'
-import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { X } from 'lucide-react'
 
 interface ResultsContainerProps {
   showResults: boolean
@@ -8,25 +8,19 @@ interface ResultsContainerProps {
 }
 
 export function ResultsContainer({ showResults, children, onClose }: ResultsContainerProps) {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
-
-  if (isMobile) {
-    return (
-      <Sheet open={showResults} onOpenChange={onClose}>
-        <SheetContent>
-          <div className="overflow-y-auto -mx-6 px-6 pb-6" style={{ maxHeight: 'calc(85vh - 4rem)' }}>
-            {children}
-          </div>
-        </SheetContent>
-      </Sheet>
-    )
-  }
-
   if (!showResults) return null
 
   return (
-    <div className="animate-fadeUp">
-      {children}
+    <div className="fixed inset-0 z-[100] bg-[var(--color-bg)] flex flex-col overflow-y-auto">
+      <div className="flex-1 w-full max-w-3xl mx-auto px-4 py-6 pb-24">
+        <button
+          onClick={onClose}
+          className="fixed top-4 right-4 w-10 h-10 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] hover:bg-[var(--color-surface-alt)] flex items-center justify-center transition-colors shadow-[var(--shadow)]"
+        >
+          <X className="w-5 h-5" />
+        </button>
+        {children}
+      </div>
     </div>
   )
 }
