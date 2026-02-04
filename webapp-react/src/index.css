@@ -89,18 +89,18 @@
     transition: background-color 0.3s ease, color 0.3s ease;
   }
 
-  /* Apple "thin material" frosted glass for light backgrounds */
+  /* Frosted glass effect for cards and surfaces */
   [class*="bg-[var(--color-surface)]"]:not(button):not(.no-glass),
   [style*="background-color: var(--color-surface)"] {
-    background-color: color-mix(in srgb, var(--color-surface) 60%, transparent) !important;
-    backdrop-filter: blur(20px) saturate(1.8) brightness(1.05);
-    -webkit-backdrop-filter: blur(20px) saturate(1.8) brightness(1.05);
+    background-color: color-mix(in srgb, var(--color-surface) 85%, transparent) !important;
+    backdrop-filter: blur(20px) saturate(1.6);
+    -webkit-backdrop-filter: blur(20px) saturate(1.6);
   }
 
   [class*="bg-[var(--color-surface-alt)]"]:not(button) {
-    background-color: color-mix(in srgb, var(--color-surface-alt) 55%, transparent) !important;
-    backdrop-filter: blur(16px) saturate(1.5) brightness(1.03);
-    -webkit-backdrop-filter: blur(16px) saturate(1.5) brightness(1.03);
+    background-color: color-mix(in srgb, var(--color-surface-alt) 82%, transparent) !important;
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
   }
 
   body::before {
