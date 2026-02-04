@@ -11,16 +11,13 @@ interface CTAActionsProps {
 
 const tierActions = {
   low: {
-    primary: 'Monitor and Track',
-    secondary: 'Learn More About Prevention'
+    primary: 'Track Over Time'
   },
   moderate: {
-    primary: 'Find Dermatologists',
-    secondary: 'Schedule Consultation'
+    primary: 'Schedule Consultation'
   },
   high: {
-    primary: 'Find Dermatologists Urgently',
-    secondary: 'Save and Share Results'
+    primary: 'Book Dermatologist Visit'
   }
 }
 
