@@ -92,6 +92,7 @@ function AppContent() {
         setCurrentView('upload')
       }
     }
+    e.target.value = ''
   }
 
   return (
