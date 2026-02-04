@@ -28,14 +28,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Fetch git notes
+      - name: Fetch API URL from git notes
         run: |
           git fetch origin refs/notes/commits:refs/notes/commits || true
-          API_URL=$(git notes show 1792ea1c2748762f5964bbb6dc7c745514e930c9 2>/dev/null || echo "")
+          FIRST_COMMIT=$(git rev-list --max-parents=0 HEAD)
+          echo "First commit: $FIRST_COMMIT"
+
+          API_URL=$(git notes show $FIRST_COMMIT 2>/dev/null || echo "")
           echo "API_URL_FROM_NOTES=$API_URL" >> $GITHUB_ENV
+
           if [ -n "$API_URL" ]; then
-            echo "✓ Found API URL in notes: $API_URL"
+            echo "✓ Found API URL: $API_URL"
           else
             echo "⚠ No API URL found in git notes"
           fi

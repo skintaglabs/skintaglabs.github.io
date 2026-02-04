@@ -30,6 +30,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Get first commit hash
+        id: first_commit
+        run: |
+          FIRST_COMMIT=$(git rev-list --max-parents=0 HEAD)
+          echo "hash=$FIRST_COMMIT" >> $GITHUB_OUTPUT
+          echo "First commit: $FIRST_COMMIT"
+
       - name: Find previous workflow
         id: find_previous
         env:
@@ -141,7 +148,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git fetch origin refs/notes/commits:refs/notes/commits || true
-          git notes add -f -m "${{ env.TUNNEL_URL }}" 1792ea1c2748762f5964bbb6dc7c745514e930c9
+          git notes add -f -m "${{ env.TUNNEL_URL }}" ${{ steps.first_commit.outputs.hash }}
           git push origin refs/notes/commits
           echo "✓ Stored API URL in git notes"
 
@@ -180,7 +187,8 @@ jobs:
             echo "Cleaning up..."
             kill $(cat server.pid) 2>/dev/null || true
             git fetch origin refs/notes/commits:refs/notes/commits 2>/dev/null || true
-            git notes remove 1792ea1c2748762f5964bbb6dc7c745514e930c9 2>/dev/null || true
+            FIRST_COMMIT=$(git rev-list --max-parents=0 HEAD)
+            git notes remove $FIRST_COMMIT 2>/dev/null || true
             git push origin refs/notes/commits 2>/dev/null || true
             exit 0
           }
