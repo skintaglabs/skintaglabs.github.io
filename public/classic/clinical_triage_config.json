@@ -1,0 +1,201 @@
+{
+  "version": "2.0",
+  "binary_classifier": {
+    "recommended_threshold": 0.15672363340854645,
+    "auc": 0.9482142663837712,
+    "thresholds": {
+      "high_sensitivity": {
+        "value": 0.15672363340854645,
+        "sensitivity": 0.95,
+        "specificity": 0.7697860962566845,
+        "use_case": "Screening mode - minimize missed malignancies"
+      },
+      "balanced": {
+        "value": 0.29454532265663147,
+        "sensitivity": 0.9,
+        "specificity": 0.85,
+        "use_case": "Balanced mode - good sensitivity with reasonable specificity"
+      },
+      "high_specificity": {
+        "value": 0.5,
+        "sensitivity": 0.8147773279352226,
+        "specificity": 0.9185828877005348,
+        "use_case": "Confirmation mode - fewer false positives"
+      }
+    }
+  },
+  "triage_tiers": {
+    "URGENT": {
+      "name": "Urgent Specialist Referral",
+      "color": "#dc2626",
+      "timeframe": "Within 2 weeks",
+      "description": "Suspicious for skin cancer. Requires urgent dermatology evaluation and possible biopsy.",
+      "conditions": [
+        "Melanoma",
+        "Squamous Cell Carcinoma"
+      ]
+    },
+    "PRIORITY": {
+      "name": "Priority Referral",
+      "color": "#ea580c",
+      "timeframe": "Within 4-6 weeks",
+      "description": "Needs dermatology evaluation. May require treatment or monitoring.",
+      "conditions": [
+        "Basal Cell Carcinoma",
+        "Actinic Keratosis"
+      ]
+    },
+    "ROUTINE": {
+      "name": "Routine Evaluation",
+      "color": "#ca8a04",
+      "timeframe": "Within 3 months",
+      "description": "Non-urgent but may benefit from dermatology consultation or primary care treatment.",
+      "conditions": [
+        "Non-Neoplastic"
+      ]
+    },
+    "MONITOR": {
+      "name": "Self-Monitor",
+      "color": "#16a34a",
+      "timeframe": "Routine self-checks",
+      "description": "Likely benign. Continue monitoring for changes using ABCDE criteria.",
+      "conditions": [
+        "Melanocytic Nevus",
+        "Seborrheic Keratosis",
+        "Dermatofibroma",
+        "Vascular Lesion",
+        "Other/Unknown"
+      ]
+    }
+  },
+  "condition_guidance": {
+    "Melanoma": {
+      "urgency": "URGENT",
+      "action": "Seek urgent dermatology referral for dermoscopy and possible biopsy",
+      "warning": "Melanoma can be life-threatening if not caught early. Any suspicion warrants evaluation.",
+      "clinical_priority": "CRITICAL - missed melanoma can be fatal"
+    },
+    "Squamous Cell Carcinoma": {
+      "urgency": "URGENT",
+      "action": "Refer to dermatology within 2 weeks for evaluation",
+      "warning": "SCC can metastasize if untreated. Early treatment has excellent outcomes.",
+      "clinical_priority": "HIGH - delayed treatment increases metastatic risk"
+    },
+    "Basal Cell Carcinoma": {
+      "urgency": "PRIORITY",
+      "action": "Schedule dermatology appointment within 4-6 weeks",
+      "warning": "BCC rarely metastasizes but grows locally and can cause tissue damage.",
+      "clinical_priority": "MODERATE - delayed treatment may require larger excision"
+    },
+    "Actinic Keratosis": {
+      "urgency": "PRIORITY",
+      "action": "Dermatology evaluation recommended. May be treated with cryotherapy or topicals.",
+      "warning": "Pre-cancerous lesion. ~10% progress to SCC if untreated.",
+      "clinical_priority": "MODERATE - progression risk over time"
+    },
+    "Non-Neoplastic": {
+      "urgency": "ROUTINE",
+      "action": "May benefit from primary care or dermatology treatment",
+      "warning": "Includes inflammatory conditions (eczema, psoriasis, dermatitis), infections (fungal, bacterial). Not cancer but often needs treatment for symptom relief.",
+      "clinical_priority": "LOW - conditions are treatable, not life-threatening"
+    },
+    "Melanocytic Nevus": {
+      "urgency": "MONITOR",
+      "action": "Continue routine self-monitoring using ABCDE criteria",
+      "warning": "Common moles. Monitor for asymmetry, border irregularity, color changes, diameter >6mm, or evolution.",
+      "clinical_priority": "LOW if monitoring instructions followed"
+    },
+    "Seborrheic Keratosis": {
+      "urgency": "MONITOR",
+      "action": "Benign growth. No treatment needed unless cosmetically bothersome.",
+      "warning": "Very common in older adults. Can sometimes mimic melanoma to untrained eye.",
+      "clinical_priority": "MINIMAL"
+    },
+    "Dermatofibroma": {
+      "urgency": "MONITOR",
+      "action": "Benign fibrous growth. No treatment needed.",
+      "warning": "Firm nodule, often on legs. May persist indefinitely.",
+      "clinical_priority": "MINIMAL"
+    },
+    "Vascular Lesion": {
+      "urgency": "MONITOR",
+      "action": "Benign vascular growth. Treatment only for cosmetic reasons.",
+      "warning": "Includes cherry angiomas, hemangiomas. Common and harmless.",
+      "clinical_priority": "MINIMAL"
+    },
+    "Other/Unknown": {
+      "urgency": "ROUTINE",
+      "action": "If uncertain, recommend primary care evaluation",
+      "warning": "Could not be confidently classified. Consider clinical evaluation if symptomatic.",
+      "clinical_priority": "UNKNOWN - recommend evaluation if concerned"
+    }
+  },
+  "ui_colors": {
+    "urgent": "#dc2626",
+    "priority": "#ea580c",
+    "routine": "#ca8a04",
+    "monitor": "#16a34a"
+  },
+  "condition_performance": {
+    "Melanoma": {
+      "sensitivity": 0.6838905775075987,
+      "specificity": 0.9715130930207078,
+      "auc": 0.9492197737898476,
+      "n_test_samples": 329
+    },
+    "Basal Cell Carcinoma": {
+      "sensitivity": 0.8230240549828178,
+      "specificity": 0.9208876025084419,
+      "auc": 0.9548742173551952,
+      "n_test_samples": 1164
+    },
+    "Squamous Cell Carcinoma": {
+      "sensitivity": 0.5886075949367089,
+      "specificity": 0.9855882985588299,
+      "auc": 0.9619221909707001,
+      "n_test_samples": 158
+    },
+    "Actinic Keratosis": {
+      "sensitivity": 0.7230046948356808,
+      "specificity": 0.9858271124093909,
+      "auc": 0.9710987987864438,
+      "n_test_samples": 213
+    },
+    "Melanocytic Nevus": {
+      "sensitivity": 0.8035850495804729,
+      "specificity": 0.9381035996488147,
+      "auc": 0.956293402864977,
+      "n_test_samples": 2622
+    },
+    "Seborrheic Keratosis": {
+      "sensitivity": 0.4305555555555556,
+      "specificity": 0.9816800714924039,
+      "auc": 0.9205901492262081,
+      "n_test_samples": 504
+    },
+    "Dermatofibroma": {
+      "sensitivity": 0.4,
+      "specificity": 0.9975508465552124,
+      "auc": 0.9564673214124817,
+      "n_test_samples": 65
+    },
+    "Vascular Lesion": {
+      "sensitivity": 0.5714285714285714,
+      "specificity": 0.9965906669507778,
+      "auc": 0.9508873398070073,
+      "n_test_samples": 70
+    },
+    "Non-Neoplastic": {
+      "sensitivity": 0.5903225806451613,
+      "specificity": 0.9576436222005842,
+      "auc": 0.9507028967867576,
+      "n_test_samples": 1240
+    },
+    "Other/Unknown": {
+      "sensitivity": 0.6192170818505338,
+      "specificity": 0.8713275726630008,
+      "auc": 0.8572335160513392,
+      "n_test_samples": 3091
+    }
+  }
+}
