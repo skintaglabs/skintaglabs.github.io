@@ -1,11 +1,13 @@
 import { Toaster } from 'sonner'
 import { AppProvider, useAppContext } from '@/contexts/AppContext'
+import { ThemeProvider } from '@/contexts/ThemeContext'
 import { useImageValidation } from '@/hooks/useImageValidation'
 import { useAnalysis } from '@/hooks/useAnalysis'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { DisclaimerBanner } from '@/components/layout/DisclaimerBanner'
 import { OnboardingModal } from '@/components/layout/OnboardingModal'
+import { ThemeToggle } from '@/components/layout/ThemeToggle'
 import { UploadZone } from '@/components/upload/UploadZone'
 import { CameraButton } from '@/components/upload/CameraButton'
 import { PreviewCard } from '@/components/upload/PreviewCard'
@@ -65,6 +67,10 @@ function AppContent() {
   return (
     <div className="min-h-screen flex flex-col">
       <OnboardingModal />
+
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
 
       <div className="flex-1 w-full max-w-3xl mx-auto px-4">
         <Header />
@@ -133,9 +139,11 @@ function AppContent() {
 
 function App() {
   return (
-    <AppProvider>
-      <AppContent />
-    </AppProvider>
+    <ThemeProvider>
+      <AppProvider>
+        <AppContent />
+      </AppProvider>
+    </ThemeProvider>
   )
 }
 
