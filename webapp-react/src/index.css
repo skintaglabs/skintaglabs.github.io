@@ -93,14 +93,14 @@
   [class*="bg-[var(--color-surface)]"]:not(button):not(.no-glass),
   [style*="background-color: var(--color-surface)"] {
     background-color: color-mix(in srgb, var(--color-surface) 85%, transparent) !important;
-    backdrop-filter: blur(20px) saturate(1.6);
-    -webkit-backdrop-filter: blur(20px) saturate(1.6);
+    backdrop-filter: blur(24px) saturate(1.6);
+    -webkit-backdrop-filter: blur(24px) saturate(1.6);
   }
 
   [class*="bg-[var(--color-surface-alt)]"]:not(button) {
     background-color: color-mix(in srgb, var(--color-surface-alt) 82%, transparent) !important;
-    backdrop-filter: blur(16px) saturate(1.4);
-    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    backdrop-filter: blur(20px) saturate(1.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
   }
 
   body::before {
