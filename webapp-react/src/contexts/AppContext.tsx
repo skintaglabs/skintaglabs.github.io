@@ -9,6 +9,7 @@ interface AppContextType {
   setIsAnalyzing: (isAnalyzing: boolean) => void
   setShowResults: (show: boolean) => void
   setShowCropper: (show: boolean) => void
+  setShowWebcam: (show: boolean) => void
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
@@ -20,7 +21,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     isAnalyzing: false,
     results: null,
     showResults: false,
-    showCropper: false
+    showCropper: false,
+    showWebcam: false
   })
 
   const setSelectedFile = (file: File | null, previewUrl: string | null) => {
@@ -37,7 +39,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       isAnalyzing: false,
       results: null,
       showResults: false,
-      showCropper: false
+      showCropper: false,
+      showWebcam: false
     })
   }
 
@@ -57,8 +60,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setState(prev => ({ ...prev, showCropper: show }))
   }
 
+  const setShowWebcam = (show: boolean) => {
+    setState(prev => ({ ...prev, showWebcam: show }))
+  }
+
   return (
-    <AppContext.Provider value={{ state, setSelectedFile, clearImage, setResults, setIsAnalyzing, setShowResults, setShowCropper }}>
+    <AppContext.Provider value={{ state, setSelectedFile, clearImage, setResults, setIsAnalyzing, setShowResults, setShowCropper, setShowWebcam }}>
       {children}
     </AppContext.Provider>
   )
