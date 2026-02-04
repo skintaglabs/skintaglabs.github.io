@@ -12,9 +12,9 @@ export function ApiHealthBanner() {
         <span>API endpoint unavailable. The server may have restarted.</span>
         <Button
           size="sm"
-          variant="secondary"
+          variant="outline"
           onClick={() => window.location.reload()}
-          className="bg-white text-amber-900 hover:bg-amber-50"
+          className="bg-white text-amber-900 hover:bg-amber-50 border-amber-200"
         >
           Refresh Page
         </Button>
