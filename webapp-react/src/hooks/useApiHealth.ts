@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { API_URL } from '@/config/api'
+import { fetchWithFallback } from '@/config/api'
 
 export function useApiHealth() {
   const [isHealthy, setIsHealthy] = useState<boolean | null>(null)
@@ -10,15 +10,10 @@ export function useApiHealth() {
 
     setIsChecking(true)
     try {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 5000)
-
-      const response = await fetch(`${API_URL}/api/health`, {
-        signal: controller.signal,
+      const response = await fetchWithFallback('/api/health', {
         cache: 'no-store'
       })
 
-      clearTimeout(timeoutId)
       setIsHealthy(response.ok)
     } catch {
       setIsHealthy(false)
