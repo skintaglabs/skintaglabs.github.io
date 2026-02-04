@@ -115,13 +115,17 @@ evaluate-cross-domain:
 app:
 	$(PYTHON_ENV) $(PYTHON) -m uvicorn app.main:app --host 0.0.0.0 --port $(PORT) --reload
 
-# Set API URL via: webapp-react/.env with VITE_API_URL=http://localhost:8000
-# Or URL param: ?api=http://localhost:8000
+# Reads API URL from git notes (same as GH Pages), falls back to localhost
+# Priority: git notes > .env > localhost:8000
 webapp:
-	cd webapp-react && npm install && npm run dev
+	@API_URL=$$(./scripts/get_api_url.sh); \
+	echo "Using API URL: $$API_URL"; \
+	cd webapp-react && VITE_API_URL=$$API_URL npm install && VITE_API_URL=$$API_URL npm run dev
 
 webapp-build:
-	cd webapp-react && npm install && npm run build
+	@API_URL=$$(./scripts/get_api_url.sh); \
+	echo "Building with API URL: $$API_URL"; \
+	cd webapp-react && VITE_API_URL=$$API_URL npm install && VITE_API_URL=$$API_URL npm run build
 
 stop:
 	@pkill -f "uvicorn app.main:app" 2>/dev/null || true
