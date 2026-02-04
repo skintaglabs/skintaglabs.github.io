@@ -1,13 +1,11 @@
-"""Augmentation pipelines for robustness to imaging conditions."""
+"""Augmentation pipelines for robustness to imaging conditions.
+
+Includes realistic field condition augmentations for smartphone-captured images,
+as would be encountered when deployed by non-specialist technicians in the field.
+"""
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
-
-# Dermoscope augmentation module not implemented yet
-# from src.data.dermoscope_aug import (
-#     get_dermoscope_removal_pipeline,
-#     get_dermoscope_addition_pipeline,
-# )
 
 
 def get_dermoscope_removal_pipeline(p: float = 0.5):

@@ -1,0 +1,35 @@
+{
+  "MobileNetV3-Large": {
+    "params": 3218482,
+    "size_mb": 12.481682777404785,
+    "metrics": {
+      "accuracy": 0.9244218838127467,
+      "f1_macro": 0.8841322704004653,
+      "f1_malignant": 0.815807560137457,
+      "auc": 0.959243482695495
+    },
+    "inference_ms": 4.914040002040565
+  },
+  "EfficientNet-B0": {
+    "params": 4335998,
+    "size_mb": 16.834635734558105,
+    "metrics": {
+      "accuracy": 0.9265369430344049,
+      "f1_macro": 0.8870576886014656,
+      "f1_malignant": 0.8202828561572956,
+      "auc": 0.9597405346631352
+    },
+    "inference_ms": 6.790861999616027
+  },
+  "SigLIP (Teacher)": {
+    "params": 878256692,
+    "size_mb": 3350.6335077285767,
+    "metrics": {
+      "accuracy": 0,
+      "f1_macro": 0,
+      "f1_malignant": 0,
+      "auc": 0
+    },
+    "inference_ms": 46.12701199948788
+  }
+}

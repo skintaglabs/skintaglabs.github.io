@@ -630,3 +630,26 @@ A native mobile app (Android and/or iOS) that runs inference entirely on-device,
 | SigLIP-B/16 (small) + head | ~350 MB | ~90 MB |
 
 MobileNetV3-Large is the recommended starting point: small enough for any phone, well-supported by TFLite/Core ML, and proven effective for medical imaging transfer learning.
+
+#### Phase 2B Results (Completed 2026-02-04)
+
+**Training completed** on the full 47,277 sample dataset using knowledge distillation from fine-tuned SigLIP.
+
+| Model | Parameters | Size | Accuracy | F1 Macro | F1 Malignant | AUC |
+|-------|------------|------|----------|----------|--------------|-----|
+| SigLIP (Teacher) | 878M | 3.4 GB | 92.30% | 0.887 | 0.824 | ~0.96 |
+| **MobileNetV3-Large** | 3.2M | **12.5 MB** | **92.44%** | 0.884 | 0.816 | 0.959 |
+| **EfficientNet-B0** | 4.3M | **16.8 MB** | **92.65%** | 0.887 | 0.820 | 0.960 |
+
+**Key achievements:**
+- Both distilled models match teacher performance (within 0.4% F1)
+- Model size reduced by **200-270x** (from 3.4 GB to 12-17 MB)
+- Targets exceeded: >85% accuracy, >0.75 F1 malignant, <25 MB size
+- ONNX exports ready for Core ML (iOS) and TFLite (Android) conversion
+
+**Artifacts:**
+- `models/mobilenet_distilled/` — MobileNetV3-Large weights + ONNX
+- `models/efficientnet_distilled/` — EfficientNet-B0 weights + ONNX
+- `mobile/ios/SkinTag/` — Complete iOS SwiftUI app
+- `mobile/flutter/skin_tag/` — Complete Flutter cross-platform app
+- `docs/MOBILE_REPORT.md` — Full deployment report

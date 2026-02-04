@@ -37,7 +37,10 @@ help:
 	@echo "  app-docker         Build and run web app in Docker (CPU)"
 	@echo "  app-docker-gpu     Build and run web app in Docker (GPU)"
 	@echo ""
-	@echo "Cleanup:"
+	@echo "Model Management:"
+	@echo "  upload-finetuned   Upload fine-tuned SigLIP to GitHub release (TAG=v1.0.0)"
+	@echo "  upload-model       Upload single model file to GitHub release (MODEL=path TAG=v1.0.0)"
+	@echo ""
 	@echo "  clean              Remove cached embeddings and models"
 
 venv:
@@ -135,3 +138,36 @@ app-docker-gpu:
 
 clean:
 	rm -rf results/cache/*
+
+# Model management - upload single file
+upload-model:
+ifndef MODEL
+	$(error MODEL is required. Usage: make upload-model MODEL=path/to/model.pt TAG=v1.0.0)
+endif
+ifndef TAG
+	$(error TAG is required. Usage: make upload-model MODEL=path/to/model.pt TAG=v1.0.0)
+endif
+	@test -f "$(MODEL)" || (echo "Error: Model file '$(MODEL)' not found" && exit 1)
+	@echo "Uploading $(MODEL) to release $(TAG)..."
+	@if gh release view $(TAG) >/dev/null 2>&1; then \
+		gh release upload $(TAG) $(MODEL) --clobber; \
+	else \
+		gh release create $(TAG) $(MODEL) --title "Model $(TAG)" --notes "Model checkpoint $(TAG)"; \
+	fi
+	@echo "Model uploaded successfully"
+
+# Upload fine-tuned SigLIP model (all 3 files)
+upload-finetuned:
+ifndef TAG
+	$(error TAG is required. Usage: make upload-finetuned TAG=v1.0.0)
+endif
+	@test -d "models/finetuned_siglip" || (echo "Error: models/finetuned_siglip/ not found" && exit 1)
+	@echo "Uploading fine-tuned SigLIP to release $(TAG)..."
+	@if gh release view $(TAG) >/dev/null 2>&1; then \
+		gh release upload $(TAG) models/finetuned_siglip/model_state.pt models/finetuned_siglip/head_state.pt models/finetuned_siglip/config.json --clobber; \
+	else \
+		gh release create $(TAG) models/finetuned_siglip/model_state.pt models/finetuned_siglip/head_state.pt models/finetuned_siglip/config.json \
+			--title "Fine-tuned SigLIP $(TAG)" \
+			--notes "Fine-tuned SigLIP for skin lesion triage. Test acc: 92.3%, F1 macro: 0.887, F1 malignant: 0.824. Trained on 47k images (5 datasets)."; \
+	fi
+	@echo "Fine-tuned model uploaded successfully"
