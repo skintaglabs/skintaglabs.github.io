@@ -6,13 +6,45 @@ export async function downloadResultsAsImage(elementId: string): Promise<void> {
     throw new Error('Results element not found')
   }
 
-  const canvas = await html2canvas(element, {
+  // Clone element to avoid modifying the original
+  const clone = element.cloneNode(true) as HTMLElement
+  clone.style.position = 'absolute'
+  clone.style.left = '-9999px'
+  clone.style.top = '0'
+  document.body.appendChild(clone)
+
+  // Replace oklch colors with hex equivalents for html2canvas compatibility
+  const replaceOklchColors = (el: HTMLElement) => {
+    const style = window.getComputedStyle(el)
+    const props = ['color', 'backgroundColor', 'borderColor']
+
+    props.forEach(prop => {
+      const value = style.getPropertyValue(prop)
+      if (value.includes('oklch')) {
+        // Get the computed color and set it directly
+        const computed = getComputedStyle(el)[prop as any]
+        el.style[prop as any] = computed
+      }
+    })
+
+    Array.from(el.children).forEach(child => {
+      if (child instanceof HTMLElement) {
+        replaceOklchColors(child)
+      }
+    })
+  }
+
+  replaceOklchColors(clone)
+
+  const canvas = await html2canvas(clone, {
     backgroundColor: '#f6f4f0',
     scale: 2,
     logging: false,
     useCORS: true,
     allowTaint: true
   })
+
+  document.body.removeChild(clone)
 
   const blob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((blob) => {
