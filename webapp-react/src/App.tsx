@@ -9,12 +9,13 @@ import { OnboardingModal } from '@/components/layout/OnboardingModal'
 import { UploadZone } from '@/components/upload/UploadZone'
 import { CameraButton } from '@/components/upload/CameraButton'
 import { PreviewCard } from '@/components/upload/PreviewCard'
+import { ImageCropper } from '@/components/upload/ImageCropper'
 import { ResultsContainer } from '@/components/results/ResultsContainer'
 import { SkeletonResults } from '@/components/results/SkeletonResults'
 import { Results } from '@/components/results/Results'
 
 function AppContent() {
-  const { state, setSelectedFile, clearImage, setShowResults } = useAppContext()
+  const { state, setSelectedFile, clearImage, setShowResults, setShowCropper } = useAppContext()
   const { validateImage } = useImageValidation()
   const { analyze } = useAnalysis()
 
@@ -40,6 +41,27 @@ function AppContent() {
     setShowResults(false)
   }
 
+  const handleShowCropper = () => {
+    setShowCropper(true)
+  }
+
+  const handleCropComplete = async (croppedBlob: Blob, croppedUrl: string) => {
+    if (state.previewUrl) {
+      URL.revokeObjectURL(state.previewUrl)
+    }
+
+    const croppedFile = new File([croppedBlob], state.selectedFile?.name || 'cropped-image.jpg', {
+      type: 'image/jpeg'
+    })
+
+    setSelectedFile(croppedFile, croppedUrl)
+    setShowCropper(false)
+  }
+
+  const handleCancelCrop = () => {
+    setShowCropper(false)
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <OnboardingModal />
@@ -59,12 +81,21 @@ function AppContent() {
             </div>
           )}
 
-          {state.selectedFile && state.previewUrl && !state.isAnalyzing && !state.showResults && (
+          {state.selectedFile && state.previewUrl && !state.isAnalyzing && !state.showResults && !state.showCropper && (
             <PreviewCard
               file={state.selectedFile}
               previewUrl={state.previewUrl}
               onClear={clearImage}
               onAnalyze={handleAnalyze}
+              onCrop={handleShowCropper}
+            />
+          )}
+
+          {state.selectedFile && state.previewUrl && state.showCropper && (
+            <ImageCropper
+              imageUrl={state.previewUrl}
+              onCropComplete={handleCropComplete}
+              onCancel={handleCancelCrop}
             />
           )}
 

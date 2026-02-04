@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, FileImage } from 'lucide-react'
+import { X, FileImage, Crop } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { formatFileSize } from '@/lib/utils'
@@ -9,9 +9,10 @@ interface PreviewCardProps {
   previewUrl: string
   onClear: () => void
   onAnalyze: () => void
+  onCrop: () => void
 }
 
-export function PreviewCard({ file, previewUrl, onClear, onAnalyze }: PreviewCardProps) {
+export function PreviewCard({ file, previewUrl, onClear, onAnalyze, onCrop }: PreviewCardProps) {
   const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null)
 
   useEffect(() => {
@@ -37,7 +38,7 @@ export function PreviewCard({ file, previewUrl, onClear, onAnalyze }: PreviewCar
           <X className="w-4 h-4" />
         </button>
       </div>
-      <div className="p-4 space-y-4">
+      <div className="p-4 space-y-3">
         <div className="flex items-start gap-3">
           <FileImage className="w-5 h-5 text-[var(--color-text-muted)] flex-shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
@@ -48,9 +49,15 @@ export function PreviewCard({ file, previewUrl, onClear, onAnalyze }: PreviewCar
             </p>
           </div>
         </div>
-        <Button onClick={onAnalyze} className="w-full" size="lg">
-          Analyze Image
-        </Button>
+        <div className="flex gap-3">
+          <Button onClick={onCrop} variant="outline" className="flex-1">
+            <Crop className="w-4 h-4" />
+            Crop
+          </Button>
+          <Button onClick={onAnalyze} className="flex-1">
+            Analyze
+          </Button>
+        </div>
       </div>
     </Card>
   )

@@ -21,6 +21,7 @@ export interface AppState {
   isAnalyzing: boolean
   results: AnalysisResult | null
   showResults: boolean
+  showCropper: boolean
 }
 
 export interface TierConfig {
