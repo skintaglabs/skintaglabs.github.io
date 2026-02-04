@@ -24,7 +24,6 @@ jobs:
     permissions:
       actions: write
       contents: write
-      variables: write
 
     steps:
       - uses: actions/checkout@v4
@@ -137,10 +136,17 @@ jobs:
       - name: Update repository variable with API URL
         if: env.TUNNEL_URL != ''
         run: |
-          gh variable set ACTIVE_API_URL --body "${{ env.TUNNEL_URL }}"
+          curl -X PATCH \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/variables/ACTIVE_API_URL" \
+            -d "{\"name\":\"ACTIVE_API_URL\",\"value\":\"${{ env.TUNNEL_URL }}\"}" \
+            || curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/variables" \
+            -d "{\"name\":\"ACTIVE_API_URL\",\"value\":\"${{ env.TUNNEL_URL }}\"}"
           echo "✓ Updated ACTIVE_API_URL variable"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Trigger frontend deployment with API URL
         if: env.TUNNEL_URL != ''
@@ -176,7 +182,11 @@ jobs:
           cleanup() {
             echo "Cleaning up..."
             kill $(cat server.pid) 2>/dev/null || true
-            gh variable delete ACTIVE_API_URL 2>/dev/null || echo "Variable already cleared"
+            curl -X DELETE \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/actions/variables/ACTIVE_API_URL" \
+              2>/dev/null || echo "Variable already cleared"
             exit 0
           }
           trap cleanup SIGTERM SIGINT
