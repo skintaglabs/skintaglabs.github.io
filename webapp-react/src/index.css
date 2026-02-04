@@ -140,9 +140,18 @@ body::before {
   animation: shimmer 1.5s ease-in-out infinite;
   background: linear-gradient(
     90deg,
+    oklch(0.97 0.006 55) 0%,
+    oklch(0.94 0.008 55) 50%,
+    oklch(0.97 0.006 55) 100%
+  );
+  background-size: 200% 100%;
+}
+
+:root.dark .animate-shimmer {
+  background: linear-gradient(
+    90deg,
     var(--color-surface-alt) 0%,
     var(--color-surface) 50%,
     var(--color-surface-alt) 100%
   );
-  background-size: 200% 100%;
 }
