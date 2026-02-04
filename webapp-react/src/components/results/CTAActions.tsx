@@ -1,9 +1,12 @@
 import { Button } from '@/components/ui/button'
-import { MapPin, Download, Share2 } from 'lucide-react'
+import { MapPin, Download, Copy } from 'lucide-react'
 import { toast } from 'sonner'
+import { downloadResultsAsImage, formatResultsAsText, copyResultsToClipboard } from '@/lib/downloadUtils'
+import type { AnalysisResult } from '@/types'
 
 interface CTAActionsProps {
   tier: 'low' | 'moderate' | 'high'
+  results: AnalysisResult
 }
 
 const tierActions = {
@@ -21,13 +24,32 @@ const tierActions = {
   }
 }
 
-export function CTAActions({ tier }: CTAActionsProps) {
+export function CTAActions({ tier, results }: CTAActionsProps) {
   const actions = tierActions[tier]
 
   const handleClick = (action: string) => {
     toast.info('Feature coming soon!', {
       description: `${action} will be available in a future update.`
     })
+  }
+
+  const handleDownload = async () => {
+    try {
+      await downloadResultsAsImage('results-capture')
+      toast.success('Results saved as image')
+    } catch (error) {
+      toast.error('Failed to save image')
+    }
+  }
+
+  const handleCopy = () => {
+    try {
+      const text = formatResultsAsText(results)
+      copyResultsToClipboard(text)
+      toast.success('Results copied to clipboard')
+    } catch (error) {
+      toast.error('Failed to copy to clipboard')
+    }
   }
 
   return (
@@ -43,26 +65,20 @@ export function CTAActions({ tier }: CTAActionsProps) {
 
       <div className="grid grid-cols-2 gap-3">
         <Button
-          onClick={() => handleClick('Save Results')}
+          onClick={handleDownload}
           variant="outline"
           size="default"
         >
           <Download className="w-4 h-4" />
-          Save
-          <span className="ml-auto text-[11px] px-1.5 py-0.5 rounded-full bg-[var(--color-surface-alt)] border">
-            Soon
-          </span>
+          Save Image
         </Button>
         <Button
-          onClick={() => handleClick('Share Results')}
+          onClick={handleCopy}
           variant="outline"
           size="default"
         >
-          <Share2 className="w-4 h-4" />
-          Share
-          <span className="ml-auto text-[11px] px-1.5 py-0.5 rounded-full bg-[var(--color-surface-alt)] border">
-            Soon
-          </span>
+          <Copy className="w-4 h-4" />
+          Copy Text
         </Button>
       </div>
     </div>

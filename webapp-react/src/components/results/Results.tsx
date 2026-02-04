@@ -14,34 +14,36 @@ interface ResultsProps {
 export function Results({ results }: ResultsProps) {
   return (
     <div className="space-y-6">
-      <TierCard
-        tier={results.urgency_tier}
-        confidence={results.confidence}
-        recommendation={results.recommendation}
-      />
-
-      <RiskDisplay
-        score={results.risk_score}
-        tier={results.urgency_tier}
-      />
-
-      <ABCDEGrid />
-
-      {results.condition_estimate && results.condition_probabilities && (
-        <ConditionCard
-          topCondition={results.condition_estimate}
-          conditions={results.condition_probabilities}
+      <div id="results-capture" className="space-y-6">
+        <TierCard
+          tier={results.urgency_tier}
+          confidence={results.confidence}
+          recommendation={results.recommendation}
         />
-      )}
 
-      <BinaryBarsCard
-        benign={results.probabilities.benign}
-        malignant={results.probabilities.malignant}
-      />
+        <RiskDisplay
+          score={results.risk_score}
+          tier={results.urgency_tier}
+        />
 
-      <CTAActions tier={results.urgency_tier} />
+        <ABCDEGrid />
 
-      <DisclaimerBanner />
+        {results.condition_estimate && results.condition_probabilities && (
+          <ConditionCard
+            topCondition={results.condition_estimate}
+            conditions={results.condition_probabilities}
+          />
+        )}
+
+        <BinaryBarsCard
+          benign={results.probabilities.benign}
+          malignant={results.probabilities.malignant}
+        />
+
+        <DisclaimerBanner />
+      </div>
+
+      <CTAActions tier={results.urgency_tier} results={results} />
     </div>
   )
 }
