@@ -183,4 +183,5 @@
     var(--color-surface) 50%,
     var(--color-surface-alt) 100%
   );
+  background-size: 200% 100%;
 }
