@@ -62,22 +62,22 @@ export function OnboardingModal() {
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetContent>
-        <div className="flex flex-col h-full">
-          <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
-            <div className="w-20 h-20 rounded-full bg-[var(--color-surface-alt)] flex items-center justify-center mb-6">
-              <Icon className="w-10 h-10 text-[var(--color-accent-warm)]" />
+      <SheetContent className="sm:max-w-md sm:mx-auto sm:my-auto sm:h-auto sm:rounded-[var(--radius-lg)]">
+        <div className="flex flex-col h-full sm:h-auto">
+          <div className="flex-1 flex flex-col items-center justify-center text-center px-4 py-8 sm:py-12">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[var(--color-surface-alt)] flex items-center justify-center mb-6">
+              <Icon className="w-8 h-8 sm:w-10 sm:h-10 text-[var(--color-accent-warm)]" />
             </div>
 
-            <h2 className="text-[28px] leading-tight font-semibold mb-4" style={{ fontFamily: "'Instrument Serif', serif" }}>
+            <h2 className="text-[22px] sm:text-[24px] leading-tight font-semibold mb-3" style={{ fontFamily: "'Instrument Serif', serif" }}>
               {currentTip.title}
             </h2>
 
-            <p className="text-[17px] text-[var(--color-text-secondary)] leading-relaxed max-w-sm">
+            <p className="text-[15px] sm:text-[16px] text-[var(--color-text-secondary)] leading-relaxed max-w-sm">
               {currentTip.description}
             </p>
 
-            <div className="flex gap-2 mt-8">
+            <div className="flex gap-2 mt-6">
               {tips.map((_, index) => (
                 <div
                   key={index}
@@ -91,7 +91,7 @@ export function OnboardingModal() {
             </div>
           </div>
 
-          <div className="flex gap-3 p-6">
+          <div className="flex gap-3 p-4 sm:p-6">
             {currentStep < tips.length - 1 ? (
               <>
                 <Button onClick={handleSkip} variant="ghost" className="flex-1">
