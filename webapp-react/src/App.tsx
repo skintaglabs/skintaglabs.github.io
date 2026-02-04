@@ -12,7 +12,6 @@ import { BottomNav } from '@/components/layout/BottomNav'
 import { OnboardingModal } from '@/components/layout/OnboardingModal'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
 import { UploadZone } from '@/components/upload/UploadZone'
-import { CameraButton } from '@/components/upload/CameraButton'
 import { PreviewCard } from '@/components/upload/PreviewCard'
 import { ImageCropper } from '@/components/upload/ImageCropper'
 import { ResultsContainer } from '@/components/results/ResultsContainer'
@@ -30,14 +29,6 @@ function AppContent() {
 
   const handleFileSelect = (file: File, previewUrl: string) => {
     setSelectedFile(file, previewUrl)
-  }
-
-  const handleCameraCapture = async (file: File) => {
-    const isValid = await validateImage(file)
-    if (isValid) {
-      const previewUrl = URL.createObjectURL(file)
-      setSelectedFile(file, previewUrl)
-    }
   }
 
   const handleAnalyze = async () => {
@@ -92,9 +83,13 @@ function AppContent() {
   const handleCameraInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      await handleCameraCapture(file)
-      if (currentView === 'history') {
-        setCurrentView('upload')
+      const isValid = await validateImage(file)
+      if (isValid) {
+        const previewUrl = URL.createObjectURL(file)
+        setSelectedFile(file, previewUrl)
+        if (currentView === 'history') {
+          setCurrentView('upload')
+        }
       }
     }
     e.target.value = ''
@@ -126,10 +121,7 @@ function AppContent() {
           ) : (
             <>
               {!state.selectedFile && (
-                <div className="space-y-4">
-                  <UploadZone onFileSelect={handleFileSelect} />
-                  <CameraButton onCapture={handleCameraCapture} />
-                </div>
+                <UploadZone onFileSelect={handleFileSelect} />
               )}
 
               {state.selectedFile && state.previewUrl && !state.isAnalyzing && !state.showResults && !state.showCropper && (
