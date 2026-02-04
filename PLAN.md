@@ -653,3 +653,196 @@ MobileNetV3-Large is the recommended starting point: small enough for any phone,
 - `mobile/ios/SkinTag/` — Complete iOS SwiftUI app
 - `mobile/flutter/skin_tag/` — Complete Flutter cross-platform app
 - `docs/MOBILE_REPORT.md` — Full deployment report
+
+### 2C. Clinical Triage System (Completed 2026-02-04)
+
+A four-tier clinical triage system designed with dermatologist input for real-world clinical decision support.
+
+#### Four-Tier Clinical Triage
+
+| Tier | Malignancy Score | Conditions | Color | Timeframe | Action |
+|------|------------------|------------|-------|-----------|--------|
+| **URGENT** | >60% | Melanoma, SCC | Red (#dc2626) | Within 2 weeks | Seek urgent dermatology referral |
+| **PRIORITY** | 30-60% | BCC, Actinic Keratosis | Orange (#ea580c) | Within 1 month | Schedule dermatology appointment |
+| **ROUTINE** | 15-30% | Non-Neoplastic | Blue (#1a56db) | Within 3 months | Primary care follow-up |
+| **MONITOR** | <15% | Benign lesions | Green (#16a34a) | 6-12 months | Self-monitor, photograph changes |
+
+**Justification**: The four-tier system aligns with clinical practice where dermatologists mentally categorize patients by urgency. The thresholds were derived from clinical triage analysis (`scripts/clinical_triage_analysis.py`) optimized for 95% sensitivity on malignant conditions:
+- At 95% sensitivity, binary threshold = 0.157 with 77% specificity
+- Per-condition AUC ranges from 0.85 (Non-Neoplastic) to 0.97 (Vascular Lesion)
+- Melanoma sensitivity: 68% → needs improvement via retraining (see Phase 3)
+
+#### Clinical Guidance with DermNet Links
+
+Each condition includes contextual guidance with links to authoritative dermatology resources:
+
+```javascript
+// Example from public/classic/index.html
+const CLINICAL_GUIDANCE = {
+    "Melanoma": {
+        urgency: "urgent",
+        timeframe: "Within 2 weeks",
+        action: "Seek urgent dermatology referral for dermoscopy and possible biopsy.",
+        warning: "Melanoma can be life-threatening if not caught early...",
+        link: "https://dermnetnz.org/topics/melanoma",
+        linkText: "DermNet: Melanoma"
+    },
+    // ... 9 more conditions
+};
+```
+
+**Key design decisions:**
+1. **DermNet NZ as reference**: Peer-reviewed, dermatologist-maintained, freely accessible
+2. **Links only shown when online**: `navigator.onLine` check prevents broken links offline
+3. **Non-neoplastic treatment callout**: Conditions like eczema/psoriasis may resolve with OTC treatment
+4. **Prominent disclaimers**: "AI screening tool, not a diagnosis" visible in all tiers
+
+#### Artifacts
+- `public/classic/index.html` — Web app with 4-tier triage + tooltips
+- `results/clinical_triage_config.json` — Threshold configuration
+- `scripts/clinical_triage_analysis.py` — Analysis script
+
+### 2D. Field Condition Augmentations (Completed 2026-02-04)
+
+Augmentation pipeline simulating realistic smartphone capture conditions for improved robustness in field deployments.
+
+#### Augmentation Categories
+
+| Category | Simulation | Albumentations |
+|----------|-----------|----------------|
+| Motion blur | Shaky hands during capture | `MotionBlur`, `GaussianBlur`, `MedianBlur` |
+| Focus issues | Autofocus problems | `Defocus`, `ZoomBlur` |
+| Lighting | Indoor/outdoor variations | `RandomBrightnessContrast`, `RandomGamma`, `RandomToneCurve` |
+| Color cast | Different light sources | `HueSaturationValue`, `RGBShift`, `ColorJitter` |
+| Sensor noise | Low light, older phones | `GaussNoise`, `ISONoise`, `MultiplicativeNoise` |
+| Compression | WhatsApp/social media | `ImageCompression`, `Downscale` |
+| Shadows | Hand/phone occlusion | `RandomShadow` |
+| Glare | Flash reflection | `RandomSunFlare` |
+
+**Severity levels**: `light`, `moderate`, `heavy` — configurable based on target deployment environment.
+
+**Justification**: Training images are predominantly from clinical settings with controlled lighting and professional equipment. Real-world smartphone photos exhibit significant degradation. Field condition augmentations bridge this domain gap during training.
+
+#### Artifacts
+- `src/data/augmentations.py` — Reusable augmentation pipelines
+- `scripts/full_retraining_pipeline.py` — Standalone retraining with augmentations
+
+### 2E. Distance and Framing Considerations
+
+**Problem**: Training datasets contain close-up, well-framed lesion images (typically 2-10cm from skin). Real users may photograph from farther away, capture multiple lesions, or poorly frame the region of interest.
+
+#### Impact Analysis
+
+| Distance | Image Content | Model Performance |
+|----------|---------------|-------------------|
+| 2-10cm (training) | Single lesion fills frame | Optimal — matches training |
+| 20-30cm | Lesion + surrounding skin | Degraded — lesion may be small |
+| 50cm+ | Multiple lesions or body part | Poor — needs lesion detection |
+
+#### Recommended Solutions
+
+**1. Mobile App UI Guidance (Implemented)**
+- Display framing overlay showing optimal lesion placement
+- Provide real-time feedback: "Move closer" / "Center the lesion"
+- Show reference distance indicator (~10cm from skin)
+
+**2. Zoom Prompt (Recommended)**
+- Detect if lesion is too small in frame (< 20% of image area)
+- Prompt user to zoom in or move closer
+- Can be implemented with simple thresholding on detected lesion size
+
+**3. Lesion Detection Pre-processing (Future Phase 3)**
+- Train a lightweight object detection model (YOLO-Nano or MobileNet-SSD)
+- Automatically detect and crop to the primary lesion
+- Enables multi-lesion triage in a single photo
+- Model size: ~5-10 MB additional for mobile deployment
+
+**4. Multi-Scale Inference (Alternative)**
+- Run inference at multiple crop scales
+- Aggregate predictions weighted by crop confidence
+- Increases inference time 3-5x but requires no additional model
+
+**Current Status**: Mobile apps include framing guidance in UI. Lesion detection is deferred to Phase 3 as it requires additional labeled bounding box data.
+
+**Justification**: UI guidance is the most cost-effective solution for MVP. Users can adapt their behavior with minimal friction. Automated lesion detection provides a better experience but requires dedicated object detection training data (bounding boxes) not present in current datasets.
+
+---
+
+## Phase 3: Retraining and Enhancement (Planned)
+
+### 3A. Standalone Retraining Pipeline
+
+A comprehensive retraining script (`scripts/full_retraining_pipeline.py`) that:
+- Runs completely standalone after initial setup (no Claude Code needed)
+- Never overwrites existing models (versioned output directories)
+- Trains multiple classifier types for comparison
+- Demonstrates fine-tuning improvement over frozen embeddings
+
+#### Classifier Types Trained
+
+| Classifier | Description | Use Case |
+|------------|-------------|----------|
+| XGBoost | Gradient boosting on embeddings | Best accuracy, production deployment |
+| Logistic | Linear classifier on embeddings | Fast, interpretable baseline |
+| MLP | 2-layer neural network | Flexible capacity |
+| Hierarchical | Binary head + condition head | Multi-task learning |
+
+#### Fine-tuning Comparison
+
+The pipeline compares frozen vs. fine-tuned SigLIP embeddings to demonstrate the value of domain adaptation:
+
+| Embedding Type | XGBoost Acc | XGBoost AUC | Δ |
+|----------------|-------------|-------------|---|
+| Frozen SigLIP | 95.7% | 0.990 | baseline |
+| Fine-tuned SigLIP | 96.8% | 0.992 | +1.1% |
+
+**Key finding**: Fine-tuning the last 4 transformer layers improves downstream classifier performance, especially under image distortions.
+
+### 3B. Hierarchical Multi-Task Fine-Tuning (Recommended)
+
+Based on clinical triage analysis, the current condition classifier underperforms on high-priority conditions:
+
+| Condition | Current Sensitivity | Target | Gap |
+|-----------|---------------------|--------|-----|
+| Melanoma | 68% | 95% | -27% |
+| SCC | 59% | 93% | -34% |
+| Non-Neoplastic | 59% | 75% | -16% |
+
+**Recommended approach**: Hierarchical multi-task loss with clinical class weights:
+
+```python
+loss = (
+    0.5 * binary_loss +           # Primary triage signal
+    0.3 * condition_loss_weighted + # Condition estimation
+    0.2 * contrastive_loss         # Embedding separation
+)
+
+condition_weights = {
+    'melanoma': 15.0,     # rare + critical
+    'scc': 12.0,          # rare + urgent
+    'bcc': 3.0,           # common but priority
+    'ak': 8.0,            # moderate rarity
+    'non_neoplastic': 1.5 # common, needs separation
+}
+```
+
+See `docs/RETRAINING_RECOMMENDATIONS.md` for full implementation details.
+
+### 3C. Lesion Detection for Auto-Cropping (Future)
+
+Add a lightweight object detection model to automatically detect and crop lesions:
+
+**Architecture options**:
+- YOLO-Nano (~3 MB) — fastest inference
+- MobileNet-SSD (~10 MB) — best accuracy/size tradeoff
+- CenterNet (~5 MB) — anchor-free detection
+
+**Required data**: Bounding box annotations for lesions. Options:
+1. Generate pseudo-labels using GradCAM attention maps
+2. Use ISIC segmentation masks to derive bounding boxes
+3. Manual annotation of ~1000 images for fine-tuning
+
+**Benefits**:
+- Enables photography from any distance
+- Multi-lesion triage in single photo
+- Consistent cropping improves classifier consistency

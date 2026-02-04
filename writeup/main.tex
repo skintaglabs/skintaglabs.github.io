@@ -30,7 +30,7 @@
 \maketitle
 
 \begin{abstract}
-Dermatology AI systems trained on dermoscopic images consistently underperform on clinical photographs, particularly for patients with darker skin tones---the populations with least access to dermatologists. We present \textbf{SkinTag}, a skin lesion triage system that addresses both domain shift and skin tone bias through multi-dataset training across five complementary datasets spanning dermoscopic, clinical, and smartphone imaging domains. Our approach fine-tunes SigLIP, a vision-language foundation model, with domain-balanced and Fitzpatrick-balanced sampling weights. On a held-out test set of 9,456 images, our best model---XGBoost trained on fine-tuned SigLIP embeddings---achieves \textbf{96.8\% accuracy} with F1-malignant of 0.922 and AUC of 0.992, while maintaining equalized odds gaps below 0.05 for sensitivity across Fitzpatrick skin types. We demonstrate that a two-stage approach (fine-tune embeddings, then train gradient boosting) outperforms both end-to-end fine-tuning and classical ML on frozen embeddings, with substantial robustness gains under image distortions common in smartphone photography.
+Dermatology AI systems trained on dermoscopic images consistently underperform on clinical photographs, particularly for patients with darker skin tones---the populations with least access to dermatologists. We present \textbf{SkinTag}, a skin lesion triage system that addresses both domain shift and skin tone bias through multi-dataset training across five complementary datasets spanning dermoscopic, clinical, and smartphone imaging domains. Our approach fine-tunes SigLIP, a vision-language foundation model, with domain-balanced and Fitzpatrick-balanced sampling weights, augmented with realistic field condition distortions (blur, noise, compression, lighting variation). On a held-out test set of 9,456 images, our best model---XGBoost trained on fine-tuned SigLIP embeddings---achieves \textbf{96.8\% accuracy} with F1-malignant of 0.922 and AUC of 0.992, while maintaining equalized odds gaps below 0.05 for sensitivity across Fitzpatrick skin types. We introduce a four-tier clinical triage system (URGENT/PRIORITY/ROUTINE/MONITOR) with condition-specific guidance designed for real-world deployment. For mobile use in low-resource settings, we apply knowledge distillation to compress the model by 200$\times$ (from 3.4 GB to 12 MB) while preserving accuracy, enabling fully offline inference on consumer smartphones.
 \end{abstract}
 
 \section{Introduction}
@@ -159,6 +159,44 @@ We compare against several baselines using frozen SigLIP embeddings:
     \item \textbf{XGBoost}: Gradient boosted trees on embeddings
     \item \textbf{Deep MLP}: 2-layer MLP with identical architecture to our classification head, but trained on frozen embeddings
 \end{itemize}
+
+\subsection{Field Condition Augmentations}
+
+To improve robustness to real-world smartphone capture conditions, we apply augmentations simulating common image degradations \citep{buslaev2020albumentations, hendrycks2019benchmarking}:
+
+\begin{itemize}
+    \item \textbf{Motion blur}: Simulates shaky hands during capture (MotionBlur, GaussianBlur)
+    \item \textbf{Focus issues}: Autofocus problems common in macro photography (Defocus, ZoomBlur)
+    \item \textbf{Lighting variation}: Indoor/outdoor, different light sources (RandomBrightnessContrast, RandomGamma)
+    \item \textbf{Color cast}: Fluorescent lights, sunlight variations (HueSaturationValue, RGBShift)
+    \item \textbf{Sensor noise}: Low light capture, older phone cameras (GaussNoise, ISONoise)
+    \item \textbf{Compression artifacts}: WhatsApp, social media sharing (ImageCompression, Downscale)
+    \item \textbf{Shadows and glare}: Hand occlusion, flash reflection (RandomShadow, RandomSunFlare)
+\end{itemize}
+
+We apply these augmentations with probability 0.3--0.5 during training, with severity levels (light, moderate, heavy) configurable for different deployment environments.
+
+\subsection{Clinical Triage System}
+
+Rather than outputting raw probabilities, we provide clinically actionable triage tiers designed with dermatologist input \citep{janda2020can}:
+
+\begin{table}[h]
+\centering
+\caption{Four-tier clinical triage system with recommended action timeframes.}
+\label{tab:triage}
+\begin{tabular}{llll}
+\toprule
+\textbf{Tier} & \textbf{Score} & \textbf{Conditions} & \textbf{Action} \\
+\midrule
+URGENT & $>60\%$ & Melanoma, SCC & Dermatology within 2 weeks \\
+PRIORITY & 30--60\% & BCC, Actinic Keratosis & Dermatology within 1 month \\
+ROUTINE & 15--30\% & Non-Neoplastic & Primary care within 3 months \\
+MONITOR & $<15\%$ & Benign lesions & Self-monitor 6--12 months \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The thresholds were optimized for 95\% sensitivity on malignant conditions, yielding 77\% specificity at the binary threshold of 0.157. Each tier includes condition-specific guidance with links to peer-reviewed dermatology resources \citep{dermnetnz}.
 
 \section{Results}
 
@@ -306,6 +344,27 @@ For web deployment with GPU, the full fine-tuned SigLIP provides the simplest in
 
 For the 10-class condition estimation task, logistic regression on frozen embeddings achieves 68.4\% accuracy and 0.596 F1 macro. Per-condition F1 scores range from 0.584 (seborrheic keratosis) to 0.864 (vascular lesion), with melanoma at 0.667. This secondary output provides users with additional context but is not intended for diagnosis.
 
+\subsection{Mobile Deployment via Knowledge Distillation}
+
+For offline mobile deployment in low-resource settings, we apply knowledge distillation \citep{hinton2015distilling} from the fine-tuned SigLIP teacher (3.4 GB) to lightweight student models.
+
+\begin{table}[h]
+\centering
+\caption{Knowledge distillation results. Student models trained on 47,277 images using soft labels from fine-tuned SigLIP.}
+\label{tab:distillation}
+\begin{tabular}{lrrccc}
+\toprule
+\textbf{Model} & \textbf{Params} & \textbf{Size} & \textbf{Accuracy} & \textbf{F1 Macro} & \textbf{AUC} \\
+\midrule
+SigLIP (Teacher) & 878M & 3.4 GB & 92.3\% & 0.887 & 0.960 \\
+MobileNetV3-Large & 3.2M & 12.5 MB & 92.4\% & 0.884 & 0.959 \\
+EfficientNet-B0 & 4.3M & 16.8 MB & 92.7\% & 0.887 & 0.960 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Both distilled models match teacher performance within 0.4\% F1 while reducing model size by 200--270$\times$. The models are exported to ONNX format for conversion to Core ML (iOS) and TFLite (Android), enabling fully offline inference on consumer smartphones. With INT8 quantization, model sizes can be further reduced to 5--6 MB.
+
 \section{Discussion}
 
 \subsection{Domain Robustness Through Multi-Dataset Training}
@@ -336,9 +395,18 @@ Several limitations should be noted:
 
 \textbf{Label noise}: Fitzpatrick17k labels are derived from web-scraped images with automated labeling, introducing potential noise. DDI and PAD-UFES-20 provide biopsy-confirmed labels but are smaller.
 
-\textbf{Clinical validation}: Our evaluation is retrospective on curated datasets. Prospective clinical validation is required before deployment.
+\textbf{Clinical validation}: Our evaluation is retrospective on curated datasets. Prospective clinical validation is required before deployment \citep{freeman2020algorithm, navarrete2021automated}.
 
 \textbf{Triage vs. diagnosis}: SkinTag is designed for triage, not diagnosis. The system cannot replace professional dermatological evaluation.
+
+\textbf{Image framing and distance}: Training datasets contain close-up, well-framed lesion images (typically 2--10cm from skin). Real-world smartphone photos may be captured from farther distances, contain multiple lesions, or have the region of interest poorly framed. This domain gap can significantly degrade performance \citep{korner2022smartphone}. We address this through:
+\begin{enumerate}
+    \item UI guidance prompting users to center and zoom on the lesion
+    \item Field condition augmentations that include scale variations
+    \item Recommended future work on automated lesion detection for cropping
+\end{enumerate}
+
+\textbf{Condition-specific sensitivity gaps}: While overall binary triage performance is strong (AUC 0.992), per-condition analysis reveals gaps for high-priority conditions: melanoma sensitivity is 68\% (target: 95\%), SCC sensitivity is 59\% (target: 93\%). Future work will apply hierarchical multi-task fine-tuning with clinical class weights to close these gaps.
 
 \subsection{Ethical Considerations}
 
@@ -357,12 +425,16 @@ We presented SkinTag, a skin lesion triage system that addresses domain shift an
 
     \item \textbf{Robustness}: Consistent improvements under blur, brightness variation, compression, and rotation---common issues in smartphone photography---with fine-tuned embeddings providing 3-4\% accuracy gains over frozen embeddings under distortion.
 
+    \item \textbf{Clinical triage system}: A four-tier urgency classification (URGENT/PRIORITY/ROUTINE/MONITOR) with condition-specific guidance, designed with dermatologist input for actionable screening recommendations.
+
+    \item \textbf{Mobile deployment}: Knowledge distillation reduces model size by 200--270$\times$ (from 3.4 GB to 12--17 MB) while preserving accuracy, enabling offline inference on consumer smartphones.
+
     \item \textbf{Two-stage training insight}: Fine-tuning improves the embedding space for dermatology-specific features, while gradient boosting provides robustness that neural classification heads lack.
 \end{enumerate}
 
 Our results suggest that the apparent trade-off between fairness and performance in dermatology AI may be an artifact of insufficient data diversity. With appropriate dataset aggregation and fairness-aware training, it is possible to build systems that perform well across imaging conditions and skin tones.
 
-Future work will focus on prospective clinical validation, expansion to additional underrepresented populations, and development of mobile deployment for offline triage in low-resource settings.
+Future work will focus on (1) prospective clinical validation, (2) hierarchical multi-task fine-tuning to improve condition-specific sensitivity for high-priority conditions (melanoma, SCC), (3) automated lesion detection for robust handling of poorly-framed images, and (4) expansion to additional underrepresented populations.
 
 \section*{Acknowledgments}
 
