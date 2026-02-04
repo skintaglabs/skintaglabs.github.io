@@ -1,8 +1,8 @@
 import { toast } from 'sonner'
-import { useImageQuality } from './useImageQuality'
+import { useComprehensiveValidation } from './useComprehensiveValidation'
 
 export function useImageValidation() {
-  const { analyzeQuality } = useImageQuality()
+  const { validate: comprehensiveValidate } = useComprehensiveValidation()
 
   const validateImage = async (file: File): Promise<boolean> => {
     if (!file.type.startsWith('image/')) {
@@ -40,31 +40,30 @@ export function useImageValidation() {
         image.src = url
       })
 
-      // Analyze image quality
+      // Comprehensive validation
       try {
-        const toastId = toast.loading('Checking image quality...')
-        const quality = await analyzeQuality(file)
+        const toastId = toast.loading('Analyzing image...')
+        const result = await comprehensiveValidate(file)
         toast.dismiss(toastId)
 
-        if (!quality.passed) {
-          const primaryIssue = quality.issues[0] || 'Image quality is insufficient'
-          toast.error(primaryIssue, {
-            description: quality.issues.length > 1
-              ? `Also: ${quality.issues.slice(1).join(', ')}`
-              : 'Try retaking with better lighting and focus'
+        if (!result.passed) {
+          toast.error(result.feedback.message, {
+            description: result.feedback.details
           })
           return false
         }
 
-        if (quality.score < 70) {
-          toast.warning('Image quality could be better', {
-            description: quality.issues.join(', ')
+        if (result.feedback.type === 'warning') {
+          toast.warning(result.feedback.message, {
+            description: result.feedback.details
           })
-        } else if (quality.score >= 85) {
-          toast.success('Image quality looks good!')
+        } else if (result.feedback.type === 'success') {
+          toast.success(result.feedback.message, {
+            description: result.feedback.details
+          })
         }
       } catch (error) {
-        console.warn('Quality analysis failed, proceeding without validation:', error)
+        console.warn('Comprehensive validation failed, proceeding without validation:', error)
       }
 
       return true

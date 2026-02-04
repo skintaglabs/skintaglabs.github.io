@@ -22,6 +22,7 @@ export interface AppState {
   results: AnalysisResult | null
   showResults: boolean
   showCropper: boolean
+  showWebcam: boolean
 }
 
 export interface TierConfig {
