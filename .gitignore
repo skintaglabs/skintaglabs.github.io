@@ -83,7 +83,36 @@ DEPLOY_HF.md
 # HuggingFace Space (deployed separately, contains pickle files)
 huggingface_space/
 
+# Mobile scaffolding (developed locally, not deployed)
+mobile/
+
+# HuggingFace deployment scripts (local-only)
+scripts/upload_to_hf.py
+scripts/upload_v2_and_guide.py
+scripts/list_hf_repo.py
+
+# One-off analysis/training scripts (local-only)
+scripts/complete_finetuned_classifiers.py
+scripts/clinical_triage_analysis.py
+scripts/distill_mobilenet.py
+scripts/export_mobile_models.py
+scripts/generate_mobile_report.py
+scripts/retrain_clinical_model.py
+scripts/comprehensive_evaluation.py
+scripts/train_efficientnet.py
+scripts/error_analysis.py
+
+# Executed notebooks (large, contain output)
+notebooks/*_executed.ipynb
+
+# Legacy config
+public/classic/
+
+# Internal reports
+.docs/MOBILE_REPORT.json
+
 # OS
 .DS_Store
 Thumbs.db
+nul
 public/app/
