@@ -132,25 +132,20 @@ export function ImageCropper({ imageUrl, onCropComplete, onCancel }: ImageCroppe
     </div>
   )
 
-  if (isMobile) {
-    return (
-      <div className="fixed inset-0 z-[100]">
-        <div className="fixed inset-0 bg-black/40" onClick={onCancel} />
-        <div className="fixed inset-0 bg-[var(--color-surface)] flex flex-col z-[100]">
-          {content}
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="fixed inset-0 z-[100]">
       <div className="fixed inset-0 bg-black/40" onClick={onCancel} />
-      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] w-full max-w-2xl mx-4">
-        <div className="bg-[var(--color-surface)] rounded-[var(--radius-lg)] overflow-hidden shadow-[var(--shadow-lg)]">
+      {isMobile ? (
+        <div className="fixed inset-0 bg-[var(--color-surface)] flex flex-col z-[100]">
           {content}
         </div>
-      </div>
+      ) : (
+        <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] w-full max-w-2xl mx-4">
+          <div className="bg-[var(--color-surface)] rounded-[var(--radius-lg)] overflow-hidden shadow-[var(--shadow-lg)]">
+            {content}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

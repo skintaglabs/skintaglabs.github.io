@@ -12,19 +12,12 @@ interface CTAActionsProps {
 
 const FIND_A_DERM_URL = 'https://find-a-derm.aad.org/search?searchTerm=&searchLocation='
 
+const DERM_ACTION = { primary: 'Find a Dermatologist', url: FIND_A_DERM_URL }
+
 const tierActions = {
-  low: {
-    primary: 'Learn More',
-    url: 'https://www.aad.org/public/diseases/skin-cancer'
-  },
-  moderate: {
-    primary: 'Find a Dermatologist',
-    url: FIND_A_DERM_URL
-  },
-  high: {
-    primary: 'Find a Dermatologist',
-    url: FIND_A_DERM_URL
-  }
+  low: { primary: 'Learn More', url: 'https://www.aad.org/public/diseases/skin-cancer' },
+  moderate: DERM_ACTION,
+  high: DERM_ACTION,
 }
 
 async function getZipCode(lat: number, lon: number): Promise<string | null> {
@@ -56,7 +49,7 @@ export function CTAActions({ tier, results, onAnalyzeAnother }: CTAActionsProps)
           return
         }
       } catch {
-        console.log('Location access denied or failed, using default location')
+        // Location access denied or unavailable
       }
     }
 

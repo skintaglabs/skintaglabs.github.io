@@ -193,7 +193,6 @@ export function WebcamCapture({ onCapture, onClose }: WebcamCaptureProps) {
               </button>
             </div>
           ) : (
-            <>
               <div className="relative rounded-lg overflow-hidden">
                 <video
                   ref={videoRef}
@@ -263,7 +262,6 @@ export function WebcamCapture({ onCapture, onClose }: WebcamCaptureProps) {
                   </>
                 )}
               </div>
-            </>
           )}
         </div>
 

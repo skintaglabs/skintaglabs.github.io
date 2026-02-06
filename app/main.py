@@ -349,20 +349,13 @@ def _add_condition_estimate(response: dict, image: Image.Image, embedding) -> No
 
 @app.get("/api/health")
 async def health():
-    model_loaded = _state["e2e_model"] is not None or _state["classifier"] is not None
-
-    if _state["extractor"]:
-        device = _state["extractor"].device
-    elif _state["e2e_model"]:
-        device = _state["e2e_model"].device
-    else:
-        device = "unknown"
+    active_model = _state["extractor"] or _state["e2e_model"]
 
     return {
         "status": "ok",
         "inference_mode": _state["inference_mode"],
-        "model_loaded": model_loaded,
-        "device": device,
+        "model_loaded": _state["e2e_model"] is not None or _state["classifier"] is not None,
+        "device": active_model.device if active_model else "unknown",
     }
 
 
