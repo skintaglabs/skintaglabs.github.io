@@ -571,10 +571,12 @@ class EndToEndClassifier:
         save_dir = Path(save_dir)
         device = device or ("cuda" if torch.cuda.is_available() else "cpu")
 
-        # Check for v2 model directory (may be nested under siglip_finetuned/)
-        v2_dir = save_dir / "siglip_finetuned"
-        if (v2_dir / "siglip_finetuned.pt").exists():
-            save_dir = v2_dir
+        # Check for v2 model in subdirectories (HF downloads to v2/)
+        for subdir in ["v2", "siglip_finetuned"]:
+            candidate = save_dir / subdir
+            if (candidate / "siglip_finetuned.pt").exists():
+                save_dir = candidate
+                break
 
         is_v2 = (save_dir / "siglip_finetuned.pt").exists()
 
