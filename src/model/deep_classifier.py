@@ -64,6 +64,59 @@ class EndToEndSigLIP(nn.Module):
         return self.head(features)
 
 
+class FineTunableSigLIP(nn.Module):
+    """SigLIP with unfrozen last N transformer layers for fine-tuning.
+
+    V2 architecture with 3-layer MLP head (LayerNorm + GELU).
+    Used by the full_retraining_pipeline for production models.
+    """
+
+    def __init__(
+        self,
+        model_name="google/siglip-so400m-patch14-384",
+        hidden_dim=512,
+        n_classes=2,
+        dropout=0.3,
+        unfreeze_layers=4,
+    ):
+        super().__init__()
+        from transformers import AutoModel
+        self.backbone = AutoModel.from_pretrained(model_name)
+        self.embedding_dim = self.backbone.config.vision_config.hidden_size
+
+        for param in self.backbone.parameters():
+            param.requires_grad = False
+
+        if unfreeze_layers > 0:
+            vision_layers = self.backbone.vision_model.encoder.layers
+            for layer in vision_layers[-unfreeze_layers:]:
+                for param in layer.parameters():
+                    param.requires_grad = True
+
+        self.head = nn.Sequential(
+            nn.Linear(self.embedding_dim, hidden_dim),
+            nn.LayerNorm(hidden_dim),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, hidden_dim // 2),
+            nn.LayerNorm(hidden_dim // 2),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim // 2, n_classes),
+        )
+
+    def forward(self, pixel_values):
+        outputs = self.backbone.vision_model(pixel_values=pixel_values)
+        features = outputs.pooler_output
+        return self.head(features)
+
+    def extract_embeddings(self, pixel_values):
+        """Extract embeddings without classification head."""
+        with torch.no_grad():
+            outputs = self.backbone.vision_model(pixel_values=pixel_values)
+            return outputs.pooler_output
+
+
 class DeepClassifier:
     """PyTorch-based deep classifier on pre-extracted embeddings.
 
@@ -509,25 +562,63 @@ class EndToEndClassifier:
 
     @classmethod
     def load_for_inference(cls, save_dir: str, device: str = None):
-        """Load a previously exported fine-tuned model."""
+        """Load a previously exported fine-tuned model.
+
+        Detects v2 models (siglip_finetuned.pt + FineTunableSigLIP architecture)
+        vs v1 models (model_state.pt + EndToEndSigLIP architecture).
+        """
         import json
         save_dir = Path(save_dir)
         device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+
+        # Check for v2 model directory (may be nested under siglip_finetuned/)
+        v2_dir = save_dir / "siglip_finetuned"
+        if (v2_dir / "siglip_finetuned.pt").exists():
+            save_dir = v2_dir
+
+        is_v2 = (save_dir / "siglip_finetuned.pt").exists()
 
         with open(save_dir / "config.json") as f:
             config = json.load(f)
 
         obj = cls(
             model_name=config["model_name"],
-            hidden_dim=config["hidden_dim"],
-            n_classes=config["n_classes"],
-            dropout=config["dropout"],
-            unfreeze_layers=config["unfreeze_layers"],
+            hidden_dim=config.get("hidden_dim", 512),
+            n_classes=config.get("n_classes", 2),
+            dropout=config.get("dropout", 0.3),
+            unfreeze_layers=config.get("unfreeze_layers", 4),
             device=device,
         )
-        obj._build_model()
-        state = torch.load(save_dir / "model_state.pt", map_location=device)
-        obj.model.load_state_dict(state)
+
+        if is_v2:
+            from transformers import AutoImageProcessor
+            obj.processor = AutoImageProcessor.from_pretrained(obj.model_name)
+            obj.model = FineTunableSigLIP(
+                model_name=obj.model_name,
+                hidden_dim=obj.hidden_dim,
+                n_classes=obj.n_classes,
+                dropout=obj.dropout,
+                unfreeze_layers=obj.unfreeze_layers,
+            ).to(device)
+            state = torch.load(save_dir / "siglip_finetuned.pt", map_location=device)
+            obj.model.load_state_dict(state)
+            print(f"Loaded v2 FineTunableSigLIP model from {save_dir}")
+        else:
+            obj._build_model()
+            state = torch.load(save_dir / "model_state.pt", map_location=device)
+            obj.model.load_state_dict(state)
+            print(f"Loaded v1 EndToEndSigLIP model from {save_dir}")
+
         obj.model.to(device)
         obj.model.eval()
         return obj
+
+    def extract_embeddings(self, images):
+        """Extract embeddings from PIL images using the fine-tuned backbone.
+
+        Only available when the underlying model is FineTunableSigLIP.
+        """
+        if not isinstance(self.model, FineTunableSigLIP):
+            return None
+        pixel_values = self._prepare_images(images).to(self.device)
+        return self.model.extract_embeddings(pixel_values)

@@ -85,7 +85,14 @@ def download_e2e_model_from_hf(
         revision=revision,
         cache_dir=str(_get_cache_dir(cache_subdir)),
         token=_get_token(token),
-        allow_patterns=["config.json", "model_state.pt", "head_state.pt"],
+        allow_patterns=[
+            # v1 format
+            "config.json", "model_state.pt", "head_state.pt",
+            # v2 format (nested under siglip_finetuned/)
+            "siglip_finetuned/config.json", "siglip_finetuned/siglip_finetuned.pt",
+            # v2 classifiers
+            "classifiers/*.pkl", "classifiers_finetuned/*.pkl",
+        ],
     )
 
     print(f"Model downloaded to: {model_dir}")
@@ -100,6 +107,10 @@ def get_model_config():
     """
     return {
         "repo_id": os.getenv("HF_REPO_ID", "skintaglabs/siglip-skin-lesion-classifier"),
+        "revision": os.getenv("HF_REVISION"),
         "classifier_filename": os.getenv("HF_CLASSIFIER_FILE", "Misc/classifier_deep_mlp.pkl"),
-        "condition_classifier_filename": os.getenv("HF_CONDITION_FILE", "Misc/classifier_condition.pkl"),
+        "condition_classifier_filename": os.getenv(
+            "HF_CONDITION_FILE",
+            "Misc/classifier_condition.pkl",
+        ),
     }

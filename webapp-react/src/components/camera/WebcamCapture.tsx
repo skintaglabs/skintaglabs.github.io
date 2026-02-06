@@ -176,9 +176,9 @@ export function WebcamCapture({ onCapture, onClose }: WebcamCaptureProps) {
         <div className="relative w-full h-full max-w-5xl flex flex-col pointer-events-auto">
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-black/50 text-white hover:bg-black/70 flex items-center justify-center transition-colors"
+          className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-all active:scale-95"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4 text-white" />
         </button>
 
         <div className="flex-1 flex items-center justify-center relative">
@@ -193,7 +193,6 @@ export function WebcamCapture({ onCapture, onClose }: WebcamCaptureProps) {
               </button>
             </div>
           ) : (
-            <>
               <div className="relative rounded-lg overflow-hidden">
                 <video
                   ref={videoRef}
@@ -263,7 +262,6 @@ export function WebcamCapture({ onCapture, onClose }: WebcamCaptureProps) {
                   </>
                 )}
               </div>
-            </>
           )}
         </div>
 

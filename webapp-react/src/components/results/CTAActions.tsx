@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button'
-import { MapPin, Download, Copy, Upload } from 'lucide-react'
+import { MapPin, Copy, Upload, Share2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { downloadResultsAsImage, formatResultsAsText, copyResultsToClipboard } from '@/lib/downloadUtils'
+import { formatResultsAsText, copyResultsToClipboard } from '@/lib/downloadUtils'
 import type { AnalysisResult } from '@/types'
 
 interface CTAActionsProps {
@@ -10,37 +10,50 @@ interface CTAActionsProps {
   onAnalyzeAnother?: () => void
 }
 
+const FIND_A_DERM_URL = 'https://find-a-derm.aad.org/search?searchTerm=&searchLocation='
+
+const DERM_ACTION = { primary: 'Find a Dermatologist', url: FIND_A_DERM_URL }
+
 const tierActions = {
-  low: {
-    primary: 'Track Over Time'
-  },
-  moderate: {
-    primary: 'Schedule Consultation'
-  },
-  high: {
-    primary: 'Book Dermatologist Visit'
+  low: { primary: 'Learn More', url: 'https://www.aad.org/public/diseases/skin-cancer' },
+  moderate: DERM_ACTION,
+  high: DERM_ACTION,
+}
+
+async function getZipCode(lat: number, lon: number): Promise<string | null> {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`,
+      { headers: { 'User-Agent': 'SkinTag-App' } }
+    )
+    const data = await response.json()
+    return data.address?.postcode || null
+  } catch {
+    return null
   }
 }
 
 export function CTAActions({ tier, results, onAnalyzeAnother }: CTAActionsProps) {
   const actions = tierActions[tier]
 
-  const handleClick = (action: string) => {
-    toast.info('Feature coming soon!', {
-      description: `${action} will be available in a future update.`
-    })
-  }
+  const handleClick = async (url: string) => {
+    if (url.includes('find-a-derm.aad.org')) {
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 })
+        })
 
-  const handleDownload = async () => {
-    try {
-      await downloadResultsAsImage('results-capture')
-      toast.success('Results saved as image')
-    } catch (error) {
-      console.error('Download error:', error)
-      toast.error('Failed to save image', {
-        description: error instanceof Error ? error.message : 'Unknown error'
-      })
+        const zipCode = await getZipCode(position.coords.latitude, position.coords.longitude)
+        if (zipCode) {
+          window.open(url.replace('searchLocation=', `searchLocation=${zipCode}`), '_blank', 'noopener,noreferrer')
+          return
+        }
+      } catch {
+        // Location access denied or unavailable
+      }
     }
+
+    window.open(url, '_blank', 'noopener,noreferrer')
   }
 
   const handleCopy = () => {
@@ -48,15 +61,32 @@ export function CTAActions({ tier, results, onAnalyzeAnother }: CTAActionsProps)
       const text = formatResultsAsText(results)
       copyResultsToClipboard(text)
       toast.success('Results copied to clipboard')
-    } catch (error) {
+    } catch {
       toast.error('Failed to copy to clipboard')
+    }
+  }
+
+  const handleShare = () => {
+    const text = formatResultsAsText(results)
+    const shareData = { title: 'SkinTag Analysis Results', text }
+
+    if (navigator.share && navigator.canShare(shareData)) {
+      navigator.share(shareData)
+        .then(() => toast.success('Results shared'))
+        .catch(() => {
+          copyResultsToClipboard(text)
+          toast.success('Results copied to clipboard')
+        })
+    } else {
+      copyResultsToClipboard(text)
+      toast.success('Results copied - ready to share with doctor')
     }
   }
 
   return (
     <div className="space-y-3">
       <Button
-        onClick={() => handleClick(actions.primary)}
+        onClick={() => handleClick(actions.url)}
         className="w-full"
         size="lg"
       >
@@ -66,12 +96,12 @@ export function CTAActions({ tier, results, onAnalyzeAnother }: CTAActionsProps)
 
       <div className="grid grid-cols-2 gap-3">
         <Button
-          onClick={handleDownload}
+          onClick={handleShare}
           variant="outline"
           size="default"
         >
-          <Download className="w-4 h-4" />
-          Save Image
+          <Share2 className="w-4 h-4" />
+          Share
         </Button>
         <Button
           onClick={handleCopy}
@@ -79,7 +109,7 @@ export function CTAActions({ tier, results, onAnalyzeAnother }: CTAActionsProps)
           size="default"
         >
           <Copy className="w-4 h-4" />
-          Copy Text
+          Copy
         </Button>
       </div>
 

@@ -29,5 +29,5 @@ export function useApiHealth() {
     return () => clearInterval(interval)
   }, [])
 
-  return { isHealthy, checkHealth }
+  return { isHealthy, checkHealth, isChecking }
 }

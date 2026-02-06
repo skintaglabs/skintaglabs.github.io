@@ -3,6 +3,7 @@ import Cropper from 'react-easy-crop'
 import { Button } from '@/components/ui/button'
 import { X, Check } from 'lucide-react'
 import type { Area } from 'react-easy-crop'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 interface ImageCropperProps {
   imageUrl: string
@@ -54,14 +55,7 @@ export function ImageCropper({ imageUrl, onCropComplete, onCancel }: ImageCroppe
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
-  const [isMobile, setIsMobile] = useState(false)
-
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768)
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
-  }, [])
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -73,14 +67,6 @@ export function ImageCropper({ imageUrl, onCropComplete, onCancel }: ImageCroppe
     window.addEventListener('keydown', handleEscape)
     return () => window.removeEventListener('keydown', handleEscape)
   }, [onCancel])
-
-  const onCropChange = useCallback((crop: { x: number; y: number }) => {
-    setCrop(crop)
-  }, [])
-
-  const onZoomChange = useCallback((zoom: number) => {
-    setZoom(zoom)
-  }, [])
 
   const onCropCompleteInternal = useCallback((_: Area, croppedAreaPixels: Area) => {
     setCroppedAreaPixels(croppedAreaPixels)
@@ -106,8 +92,8 @@ export function ImageCropper({ imageUrl, onCropComplete, onCancel }: ImageCroppe
           crop={crop}
           zoom={zoom}
           aspect={1}
-          onCropChange={onCropChange}
-          onZoomChange={onZoomChange}
+          onCropChange={setCrop}
+          onZoomChange={setZoom}
           onCropComplete={onCropCompleteInternal}
         />
       </div>
@@ -146,25 +132,20 @@ export function ImageCropper({ imageUrl, onCropComplete, onCancel }: ImageCroppe
     </div>
   )
 
-  if (isMobile) {
-    return (
-      <div className="fixed inset-0 z-[100]">
-        <div className="fixed inset-0 bg-[var(--color-text)]/40" onClick={onCancel} />
+  return (
+    <div className="fixed inset-0 z-[100]">
+      <div className="fixed inset-0 bg-black/40" onClick={onCancel} />
+      {isMobile ? (
         <div className="fixed inset-0 bg-[var(--color-surface)] flex flex-col z-[100]">
           {content}
         </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="fixed inset-0 z-[100]">
-      <div className="fixed inset-0 bg-[var(--color-text)]/40" onClick={onCancel} />
-      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] w-full max-w-2xl mx-4">
-        <div className="bg-[var(--color-surface)] rounded-[var(--radius-lg)] overflow-hidden shadow-[var(--shadow-lg)]">
-          {content}
+      ) : (
+        <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] w-full max-w-2xl mx-4">
+          <div className="bg-[var(--color-surface)] rounded-[var(--radius-lg)] overflow-hidden shadow-[var(--shadow-lg)]">
+            {content}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
