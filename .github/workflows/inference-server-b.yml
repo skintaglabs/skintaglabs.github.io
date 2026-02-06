@@ -109,6 +109,7 @@ jobs:
           USE_HF_MODELS: true
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO_ID: ${{ secrets.HF_REPO_ID || 'skintaglabs/siglip-skin-lesion-classifier' }}
+          HF_REVISION: v2-field-augmented
         run: |
           python << 'PYEOF'
           from src.utils.model_hub import download_e2e_model_from_hf, download_model_from_hf, get_model_config
@@ -152,6 +153,7 @@ jobs:
           USE_HF_MODELS: true
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO_ID: ${{ secrets.HF_REPO_ID || 'skintaglabs/siglip-skin-lesion-classifier' }}
+          HF_REVISION: v2-field-augmented
         run: |
           nohup python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > server.log 2>&1 &
           echo $! > server.pid
@@ -233,6 +235,8 @@ jobs:
 
       - name: Monitor
         id: monitor
+        env:
+          HF_REVISION: v2-field-augmented
         run: |
           cleanup() {
             echo "Cleaning up..."
@@ -270,7 +274,7 @@ jobs:
 
             if [ "$SERVER_STATUS" != "running" ]; then
               echo "Server died, restarting..."
-              USE_HF_MODELS=true python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > server.log 2>&1 &
+              USE_HF_MODELS=true HF_REVISION=v2-field-augmented python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > server.log 2>&1 &
               echo $! > server.pid
             fi
 

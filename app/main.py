@@ -73,20 +73,19 @@ async def load_models():
         try:
             model_config = get_model_config()
             repo_id = model_config["repo_id"]
+            revision = model_config.get("revision")
 
             # Try loading fine-tuned end-to-end model first (best accuracy)
             try:
                 from src.model.deep_classifier import EndToEndClassifier
                 model_dir = download_e2e_model_from_hf(
                     repo_id=repo_id,
+                    revision=revision,
                     cache_subdir="skintag"
                 )
                 _state["e2e_model"] = EndToEndClassifier.load_for_inference(str(model_dir), device=device)
                 _state["inference_mode"] = "e2e"
                 print(f"✓ Loaded fine-tuned model from HF: {repo_id} (device={device})")
-
-                # Still load embedding extractor for condition classifier
-                _state["extractor"] = EmbeddingExtractor(device=device)
 
             except Exception as e:
                 print(f"E2E model not available, trying classifier files: {e}")
@@ -95,6 +94,7 @@ async def load_models():
                 classifier_path = download_model_from_hf(
                     repo_id=repo_id,
                     filename=model_config["classifier_filename"],
+                    revision=revision,
                     cache_subdir="skintag"
                 )
                 with open(classifier_path, "rb") as f:
@@ -109,6 +109,7 @@ async def load_models():
                 cond_path = download_model_from_hf(
                     repo_id=repo_id,
                     filename=model_config["condition_classifier_filename"],
+                    revision=revision,
                     cache_subdir="skintag"
                 )
                 with open(cond_path, "rb") as f:
@@ -127,13 +128,16 @@ async def load_models():
     # Load from local cache
     if not use_hf:
         # Try loading fine-tuned end-to-end model first
+        # Check v2 path (siglip_finetuned subdir), then v1 path
         e2e_dir = cache_dir / "finetuned_model"
+        v2_dir = e2e_dir / "siglip_finetuned"
+        if (v2_dir / "config.json").exists():
+            e2e_dir = v2_dir
         if (e2e_dir / "config.json").exists():
             try:
                 from src.model.deep_classifier import EndToEndClassifier
                 _state["e2e_model"] = EndToEndClassifier.load_for_inference(str(e2e_dir), device=device)
                 _state["inference_mode"] = "e2e"
-                _state["extractor"] = EmbeddingExtractor(device=device)
                 print(f"Loaded fine-tuned end-to-end model from {e2e_dir}")
             except Exception as e:
                 print(f"Failed to load e2e model: {e}, falling back to embedding+head")
@@ -156,12 +160,17 @@ async def load_models():
             _state["inference_mode"] = "embedding+head"
             print(f"Embedding extractor ready (device={device})")
 
-        # Load condition classifier (10-class)
-        cond_path = cache_dir / "classifier_condition.pkl"
-        if cond_path.exists():
-            with open(cond_path, "rb") as f:
-                _state["condition_classifier"] = pickle.load(f)
-            print(f"Loaded condition classifier: {cond_path.name}")
+        # Load condition classifier (10-class) — check v2 paths first
+        cond_candidates = [
+            cache_dir / "finetuned_model" / "classifiers" / "xgboost_condition.pkl",
+            cache_dir / "classifier_condition.pkl",
+        ]
+        for cond_path in cond_candidates:
+            if cond_path.exists():
+                with open(cond_path, "rb") as f:
+                    _state["condition_classifier"] = pickle.load(f)
+                print(f"Loaded condition classifier: {cond_path}")
+                break
         else:
             print("No condition classifier found (condition estimation disabled)")
 
@@ -237,8 +246,8 @@ async def analyze_image(file: UploadFile = File(...)):
 
 def _add_condition_estimate(response: dict, image: Image.Image, embedding) -> None:
     """Add condition estimate and 3-category triage to response if classifier is available."""
-    cond_clf = _state.get("condition_classifier")
-    if cond_clf is None:
+    cond_obj = _state.get("condition_classifier")
+    if cond_obj is None:
         print("Warning: condition_classifier not loaded, skipping triage_categories")
         return
 
@@ -248,13 +257,32 @@ def _add_condition_estimate(response: dict, image: Image.Image, embedding) -> No
             TriageCategory, TRIAGE_CATEGORY_NAMES,
         )
 
+        # Unpack v2 dict format: {"classifier": clf, "scaler": scaler}
+        if isinstance(cond_obj, dict):
+            cond_clf = cond_obj["classifier"]
+            cond_scaler = cond_obj.get("scaler")
+        else:
+            cond_clf = cond_obj
+            cond_scaler = None
+
         # Get embedding for condition classifier
         if embedding is not None:
-            cond_input = embedding.numpy()
-        elif _state["extractor"]:
+            cond_input = embedding.numpy() if hasattr(embedding, 'numpy') else embedding
+        elif _state["e2e_model"] and hasattr(_state["e2e_model"], 'extract_embeddings'):
+            emb = _state["e2e_model"].extract_embeddings([image])
+            cond_input = emb.cpu().numpy() if emb is not None else None
+            if cond_input is None and _state.get("extractor"):
+                cond_input = _state["extractor"].extract([image]).numpy()
+        elif _state.get("extractor"):
             cond_input = _state["extractor"].extract([image]).numpy()
         else:
             return
+
+        if cond_input is None:
+            return
+
+        if cond_scaler is not None:
+            cond_input = cond_scaler.transform(cond_input)
 
         cond_proba = cond_clf.predict_proba(cond_input)
         if cond_proba.ndim != 2:
