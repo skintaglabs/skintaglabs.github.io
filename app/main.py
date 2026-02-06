@@ -104,19 +104,30 @@ async def load_models():
                 _state["extractor"] = EmbeddingExtractor(device=device)
                 _state["inference_mode"] = "embedding+head"
 
-            # Download condition classifier (optional)
-            try:
-                cond_path = download_model_from_hf(
-                    repo_id=repo_id,
-                    filename=model_config["condition_classifier_filename"],
-                    revision=revision,
-                    cache_subdir="skintag"
-                )
-                with open(cond_path, "rb") as f:
-                    _state["condition_classifier"] = pickle.load(f)
-                print(f"✓ Loaded condition classifier from HF: {cond_path.name}")
-            except Exception as e:
-                print(f"Condition classifier not available: {e}")
+            # Load condition classifier — check v2 co-downloaded files first, then separate download
+            cond_loaded = False
+            if _state["inference_mode"] == "e2e":
+                for cond_name in ["xgboost_finetuned_condition.pkl", "xgboost_finetuned_binary.pkl"]:
+                    v2_cond = Path(model_dir) / "v2" / "classifiers" / cond_name
+                    if v2_cond.exists():
+                        with open(v2_cond, "rb") as f:
+                            _state["condition_classifier"] = pickle.load(f)
+                        print(f"✓ Loaded v2 condition classifier: {v2_cond.name}")
+                        cond_loaded = True
+                        break
+            if not cond_loaded:
+                try:
+                    cond_path = download_model_from_hf(
+                        repo_id=repo_id,
+                        filename=model_config["condition_classifier_filename"],
+                        revision=revision,
+                        cache_subdir="skintag"
+                    )
+                    with open(cond_path, "rb") as f:
+                        _state["condition_classifier"] = pickle.load(f)
+                    print(f"✓ Loaded condition classifier from HF: {cond_path.name}")
+                except Exception as e:
+                    print(f"Condition classifier not available: {e}")
 
             print(f"✓ Models loaded from Hugging Face (mode={_state['inference_mode']}, device={device})")
 
@@ -162,6 +173,7 @@ async def load_models():
 
         # Load condition classifier (10-class) — check v2 paths first
         cond_candidates = [
+            cache_dir / "finetuned_model" / "classifiers" / "xgboost_finetuned_condition.pkl",
             cache_dir / "finetuned_model" / "classifiers" / "xgboost_condition.pkl",
             cache_dir / "classifier_condition.pkl",
         ]
