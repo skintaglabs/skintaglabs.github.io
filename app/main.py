@@ -104,15 +104,15 @@ async def load_models():
                 _state["extractor"] = EmbeddingExtractor(device=device)
                 _state["inference_mode"] = "embedding+head"
 
-            # Load condition classifier — check v2 co-downloaded files first, then separate download
+            # Load condition classifier — check co-downloaded Misc/ files first, then separate download
             cond_loaded = False
             if _state["inference_mode"] == "e2e":
                 for cond_name in ["xgboost_finetuned_condition.pkl", "xgboost_finetuned_binary.pkl"]:
-                    v2_cond = Path(model_dir) / "v2" / "classifiers" / cond_name
-                    if v2_cond.exists():
-                        with open(v2_cond, "rb") as f:
+                    misc_cond = Path(model_dir) / "Misc" / cond_name
+                    if misc_cond.exists():
+                        with open(misc_cond, "rb") as f:
                             _state["condition_classifier"] = pickle.load(f)
-                        print(f"✓ Loaded v2 condition classifier: {v2_cond.name}")
+                        print(f"✓ Loaded condition classifier: {misc_cond.name}")
                         cond_loaded = True
                         break
             if not cond_loaded:

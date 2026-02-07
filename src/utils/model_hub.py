@@ -82,7 +82,7 @@ def download_e2e_model_from_hf(
     print(f"Downloading fine-tuned model from {repo_id}{rev_info}...")
 
     if is_v2:
-        patterns = ["v2/config.json", "v2/siglip_finetuned.pt", "v2/classifiers/*.pkl"]
+        patterns = ["v2/config.json", "v2/siglip_finetuned.pt", "Misc/xgboost_finetuned_*.pkl"]
     else:
         patterns = ["config.json", "model_state.pt", "head_state.pt"]
 
@@ -110,6 +110,6 @@ def get_model_config():
         "classifier_filename": os.getenv("HF_CLASSIFIER_FILE", "Misc/classifier_deep_mlp.pkl"),
         "condition_classifier_filename": os.getenv(
             "HF_CONDITION_FILE",
-            "Misc/classifier_condition.pkl",
+            "Misc/xgboost_finetuned_condition.pkl",
         ),
     }
