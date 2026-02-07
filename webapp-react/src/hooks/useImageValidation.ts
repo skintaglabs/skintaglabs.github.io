@@ -15,10 +15,6 @@ export function useImageValidation() {
       return false
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.warning('Large image detected. Analysis may take longer.')
-    }
-
     try {
       const image = new Image()
       const url = URL.createObjectURL(file)
@@ -26,11 +22,6 @@ export function useImageValidation() {
       await new Promise<void>((resolve, reject) => {
         image.onload = () => {
           URL.revokeObjectURL(url)
-
-          if (image.width > 4000 || image.height > 4000) {
-            toast.warning('Very large image. Consider resizing for faster analysis.')
-          }
-
           resolve()
         }
         image.onerror = () => {

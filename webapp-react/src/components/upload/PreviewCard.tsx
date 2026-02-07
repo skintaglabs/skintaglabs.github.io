@@ -27,7 +27,7 @@ export function PreviewCard({ file, previewUrl, onClear, onAnalyze, onCrop }: Pr
       <div className="fixed inset-0 z-[100] bg-black/40" onClick={onClear} />
       <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col animate-fadeUp">
         <div className="bg-[var(--color-surface)] rounded-[var(--radius-lg)] overflow-hidden shadow-[var(--shadow-lg)] flex flex-col max-h-[90vh]">
-          <div className="relative bg-[var(--color-surface-alt)] flex items-center justify-center" style={{ height: '400px' }}>
+          <div className="relative bg-[var(--color-surface-alt)] flex items-center justify-center min-h-0 flex-1" style={{ maxHeight: '400px' }}>
             <img
               src={previewUrl}
               alt="Preview"
@@ -40,7 +40,7 @@ export function PreviewCard({ file, previewUrl, onClear, onAnalyze, onCrop }: Pr
               <X className="w-5 h-5" />
             </button>
           </div>
-          <div className="p-6 space-y-4">
+          <div className="p-6 space-y-4 flex-shrink-0">
             <div className="flex items-start gap-3">
               <FileImage className="w-5 h-5 text-[var(--color-text-muted)] flex-shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
