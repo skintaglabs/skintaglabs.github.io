@@ -22,27 +22,37 @@ SkinTag provides preliminary screening for skin lesions using a fine-tuned SigLI
 - **Multi-dataset training:** 47k images from 5 datasets (HAM10000, DDI, BCN20000, Fitzpatrick17k, PAD-UFES-20)
 - **Fairness-aware:** Fitzpatrick-balanced sampling, equalized odds gap <5% across skin tones
 - **Domain robustness:** Trained on clinical, dermoscopic, and smartphone photos with field condition augmentations
-- **Serverless inference:** GitHub Actions + Cloudflare Tunnel deployment
 - **React frontend:** React 19 + TypeScript + Vite + Tailwind CSS
 
 ## Quick Start
 
+### Inference (CPU, Pre-trained Models)
+
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# Setup
+make venv                # Create venv + install dependencies
 
-# Run full pipeline (data -> embed -> train -> eval -> app)
-python run_pipeline.py
+# Run API server
+make app                 # Launch at http://localhost:8000
 
-# Or run individual steps via Makefile
-make install          # Install dependencies
-make data             # Download datasets
-make train            # Train models
-make evaluate         # Run evaluation
-make app              # Launch API server at http://localhost:8000
+# Frontend (separate terminal)
+make preview             # React dev server
+```
 
-# Frontend development
-cd webapp-react && npm install && npm run dev
+### Training (NVIDIA GPU Required)
+
+```bash
+# Setup
+make install-gpu         # Install dependencies with CUDA
+
+# Download datasets
+make data                # HAM10000 from Kaggle (requires kaggle CLI)
+
+# Train models
+make pipeline            # Full pipeline: data → embed → train → eval
+# OR
+make train               # Train individual models
+make evaluate            # Run fairness evaluation
 ```
 
 ## Model Performance
@@ -106,18 +116,13 @@ huggingface-cli upload YourOrg/YourModel . --repo-type model
 
 ## Deployment Options
 
-1. **GitHub Actions** (recommended, free)
-   - Serverless inference via Cloudflare tunnel
-   - Auto-restarts every 5 hours
-   - See [.docs/DEPLOYMENT.md](.docs/DEPLOYMENT.md)
-
-2. **Docker**
+1. **Docker**
    ```bash
    docker build -t skintag .
    docker run -p 8000:8000 skintag
    ```
 
-3. **Local**
+2. **Local**
    ```bash
    make app
    ```
