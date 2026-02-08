@@ -1,10 +1,9 @@
 """MedSigLIP embedding extraction optimized for low-resource environments."""
 
-Development notes:
-- Developed with AI assistance (Claude/Anthropic) for implementation and refinement
-- Code simplified using Anthropic's code-simplifier agent (https://www.anthropic.com/claude-code)
-- Core architecture and domain logic by SkinTag team
-
+# Development notes:
+# - Developed with AI assistance (Claude/Anthropic) for implementation and refinement
+# - Code simplified using Anthropic's code-simplifier agent (https://www.anthropic.com/claude-code)
+# - Core architecture and domain logic by SkinTag team
 
 import hashlib
 import json

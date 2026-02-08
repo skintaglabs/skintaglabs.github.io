@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { MapPin, Copy, Upload, Share2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { formatResultsAsText, copyResultsToClipboard } from '@/lib/downloadUtils'
+import { formatResultsAsText } from '@/lib/downloadUtils'
 import type { AnalysisResult } from '@/types'
 
 interface CTAActionsProps {
@@ -56,7 +56,7 @@ export function CTAActions({ tier, results, onAnalyzeAnother }: CTAActionsProps)
   const handleCopy = () => {
     try {
       const text = formatResultsAsText(results)
-      copyResultsToClipboard(text)
+      navigator.clipboard.writeText(text)
       toast.success('Results copied to clipboard')
     } catch {
       toast.error('Failed to copy to clipboard')
@@ -71,11 +71,11 @@ export function CTAActions({ tier, results, onAnalyzeAnother }: CTAActionsProps)
       navigator.share(shareData)
         .then(() => toast.success('Results shared'))
         .catch(() => {
-          copyResultsToClipboard(text)
+          navigator.clipboard.writeText(text)
           toast.success('Results copied to clipboard')
         })
     } else {
-      copyResultsToClipboard(text)
+      navigator.clipboard.writeText(text)
       toast.success('Results copied - ready to share with doctor')
     }
   }

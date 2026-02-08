@@ -7,11 +7,10 @@ IMPORTANT: This is a screening aid, NOT a diagnostic tool. All outputs
 include disclaimers directing users to qualified medical professionals.
 """
 
-Development notes:
-- Developed with AI assistance (Claude/Anthropic) for implementation and refinement
-- Code simplified using Anthropic's code-simplifier agent (https://www.anthropic.com/claude-code)
-- Core architecture and domain logic by SkinTag team
-
+# Development notes:
+# - Developed with AI assistance (Claude/Anthropic) for implementation and refinement
+# - Code simplified using Anthropic's code-simplifier agent (https://www.anthropic.com/claude-code)
+# - Core architecture and domain logic by SkinTag team
 
 from dataclasses import dataclass
 from typing import Optional

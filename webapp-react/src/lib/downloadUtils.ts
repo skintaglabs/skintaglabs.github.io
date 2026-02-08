@@ -1,7 +1,3 @@
-export function copyResultsToClipboard(text: string): Promise<void> {
-  return navigator.clipboard.writeText(text)
-}
-
 export function formatResultsAsText(results: {
   urgency_tier: string
   risk_score: number

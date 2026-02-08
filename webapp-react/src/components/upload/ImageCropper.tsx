@@ -1,13 +1,3 @@
-/**
- * Image cropper component for focusing on skin lesion area before analysis.
- * Allows users to adjust crop area with pinch-zoom and drag controls.
- *
- * Development notes:
- * - Developed with AI assistance (Claude/Anthropic)
- * - Uses react-easy-crop: https://github.com/ValentinH/react-easy-crop
- * - Canvas cropping logic from react-easy-crop examples
- */
-
 import { useState, useCallback, useEffect } from 'react'
 import Cropper from 'react-easy-crop'
 import { Button } from '@/components/ui/button'
@@ -67,16 +57,17 @@ export function ImageCropper({ imageUrl, onCropComplete, onCancel }: ImageCroppe
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
   const isMobile = useIsMobile()
 
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onCancel()
-      }
+  const handleEscape = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      onCancel()
     }
+  }, [onCancel])
 
+  useEffect(() => {
     window.addEventListener('keydown', handleEscape)
     return () => window.removeEventListener('keydown', handleEscape)
-  }, [onCancel])
+  }, [handleEscape])
 
   const onCropCompleteInternal = useCallback((_: Area, croppedAreaPixels: Area) => {
     setCroppedAreaPixels(croppedAreaPixels)
@@ -146,12 +137,12 @@ export function ImageCropper({ imageUrl, onCropComplete, onCancel }: ImageCroppe
     <div className="fixed inset-0 z-[100]">
       <div className="fixed inset-0 bg-black/40" onClick={onCancel} />
       {isMobile ? (
-        <div className="fixed inset-0 bg-[var(--color-surface)] flex flex-col z-[100]">
+        <div className="fixed inset-0 bg-[var(--color-surface)] flex flex-col z-[101]">
           {content}
         </div>
       ) : (
-        <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] w-full max-w-2xl mx-4">
-          <div className="bg-[var(--color-surface)] rounded-[var(--radius-lg)] overflow-hidden shadow-[var(--shadow-lg)]">
+        <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[101] w-full max-w-2xl mx-4 pointer-events-none">
+          <div className="bg-[var(--color-surface)] rounded-[var(--radius-lg)] overflow-hidden shadow-[var(--shadow-lg)] pointer-events-auto">
             {content}
           </div>
         </div>

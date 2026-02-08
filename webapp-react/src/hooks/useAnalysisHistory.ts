@@ -70,7 +70,6 @@ export function useAnalysisHistory() {
     fileName: string
   ): Promise<void> => {
     try {
-      // Read the file first before opening the transaction
       const imageUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
         reader.onload = () => resolve(reader.result as string)
@@ -78,7 +77,6 @@ export function useAnalysisHistory() {
         reader.readAsDataURL(imageBlob)
       })
 
-      // Now open the transaction with the data ready
       const db = await openDB()
       const transaction = db.transaction(STORE_NAME, 'readwrite')
       const store = transaction.objectStore(STORE_NAME)
@@ -160,7 +158,6 @@ export function useAnalysisHistory() {
     isLoading,
     saveAnalysis,
     deleteAnalysis,
-    clearHistory,
-    refreshHistory: loadHistory
+    clearHistory
   }
 }

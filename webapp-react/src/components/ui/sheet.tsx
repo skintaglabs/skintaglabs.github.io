@@ -4,8 +4,6 @@ import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const Sheet = DialogPrimitive.Root
-const SheetTrigger = DialogPrimitive.Trigger
-const SheetClose = DialogPrimitive.Close
 const SheetPortal = DialogPrimitive.Portal
 
 const SheetOverlay = React.forwardRef<
@@ -47,4 +45,4 @@ const SheetContent = React.forwardRef<
 ))
 SheetContent.displayName = DialogPrimitive.Content.displayName
 
-export { Sheet, SheetTrigger, SheetClose, SheetContent }
+export { Sheet, SheetContent }

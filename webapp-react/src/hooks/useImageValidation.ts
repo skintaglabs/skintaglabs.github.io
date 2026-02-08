@@ -40,7 +40,6 @@ export function useImageValidation() {
         image.src = url
       })
 
-      // Comprehensive validation
       try {
         const toastId = toast.loading('Analyzing image...')
         const result = await comprehensiveValidate(file)

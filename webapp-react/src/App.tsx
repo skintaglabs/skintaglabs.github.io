@@ -1,15 +1,5 @@
-/**
- * Main application component for SkinTag web interface.
- * Handles image upload, analysis workflow, and results display.
- *
- * Development notes:
- * - Developed with AI assistance (Claude/Anthropic)
- * - Core UX design and integration by SkinTag team
- */
-
 import { useState, useRef } from 'react'
-import { Toaster } from 'sonner'
-import { toast } from 'sonner'
+import { Toaster, toast } from 'sonner'
 import { AppProvider, useAppContext } from '@/contexts/AppContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { useImageValidation } from '@/hooks/useImageValidation'
@@ -38,10 +28,6 @@ function AppContent() {
   const [currentView, setCurrentView] = useState<'upload' | 'history'>('upload')
   const cameraInputRef = useRef<HTMLInputElement>(null)
 
-  const handleFileSelect = (file: File, previewUrl: string) => {
-    setSelectedFile(file, previewUrl)
-  }
-
   const handleAnalyze = async () => {
     if (!state.selectedFile) return
 
@@ -57,17 +43,9 @@ function AppContent() {
     }
   }
 
-  const handleCloseResults = () => {
-    setShowResults(false)
-  }
-
   const handleAnalyzeAnother = () => {
     clearImage()
     setShowResults(false)
-  }
-
-  const handleShowCropper = () => {
-    setShowCropper(true)
   }
 
   const handleCropComplete = async (croppedBlob: Blob, croppedUrl: string) => {
@@ -83,15 +61,7 @@ function AppContent() {
     setShowCropper(false)
   }
 
-  const handleCancelCrop = () => {
-    setShowCropper(false)
-  }
-
-  const handleCameraClick = () => {
-    setShowWebcam(true)
-  }
-
-  const handleWebcamCapture = async (file: File) => {
+  const handleFileFromCamera = async (file: File) => {
     setShowWebcam(false)
     const isValid = await validateImage(file)
     if (isValid) {
@@ -103,21 +73,10 @@ function AppContent() {
     }
   }
 
-  const handleWebcamClose = () => {
-    setShowWebcam(false)
-  }
-
   const handleCameraInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      const isValid = await validateImage(file)
-      if (isValid) {
-        const previewUrl = URL.createObjectURL(file)
-        setSelectedFile(file, previewUrl)
-        if (currentView === 'history') {
-          setCurrentView('upload')
-        }
-      }
+      await handleFileFromCamera(file)
     }
     e.target.value = ''
   }
@@ -149,7 +108,7 @@ function AppContent() {
           ) : (
             <>
               {!state.selectedFile && (
-                <UploadZone onFileSelect={handleFileSelect} />
+                <UploadZone onFileSelect={setSelectedFile} />
               )}
 
               {state.selectedFile && state.previewUrl && !state.isAnalyzing && !state.showResults && !state.showCropper && (
@@ -158,7 +117,7 @@ function AppContent() {
                   previewUrl={state.previewUrl}
                   onClear={clearImage}
                   onAnalyze={handleAnalyze}
-                  onCrop={handleShowCropper}
+                  onCrop={() => setShowCropper(true)}
                 />
               )}
 
@@ -166,14 +125,14 @@ function AppContent() {
                 <ImageCropper
                   imageUrl={state.previewUrl}
                   onCropComplete={handleCropComplete}
-                  onCancel={handleCancelCrop}
+                  onCancel={() => setShowCropper(false)}
                 />
               )}
 
               {state.isAnalyzing && <SkeletonResults />}
 
               {state.results && (
-                <ResultsContainer showResults={state.showResults} onClose={handleCloseResults}>
+                <ResultsContainer showResults={state.showResults} onClose={() => setShowResults(false)}>
                   <Results results={state.results} onAnalyzeAnother={handleAnalyzeAnother} />
                 </ResultsContainer>
               )}
@@ -185,15 +144,15 @@ function AppContent() {
       <BottomNav
         currentView={currentView}
         onNavigate={setCurrentView}
-        onCameraClick={handleCameraClick}
+        onCameraClick={() => setShowWebcam(true)}
       />
 
       <Footer />
 
       {state.showWebcam && (
         <WebcamCapture
-          onCapture={handleWebcamCapture}
-          onClose={handleWebcamClose}
+          onCapture={handleFileFromCamera}
+          onClose={() => setShowWebcam(false)}
         />
       )}
 
