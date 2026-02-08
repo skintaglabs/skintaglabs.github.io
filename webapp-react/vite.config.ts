@@ -8,6 +8,6 @@ export default defineConfig({
   resolve: {
     alias: { '@': path.resolve(__dirname, './src') }
   },
-  base: process.env.NODE_ENV === 'production' ? '/main/' : '/',
+  base: '/',
   build: { outDir: 'dist', sourcemap: false }
 })
