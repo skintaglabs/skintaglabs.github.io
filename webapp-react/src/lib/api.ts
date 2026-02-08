@@ -33,11 +33,9 @@ export async function analyzeImage(file: File, apiUrl: string): Promise<Analysis
     }
   }
 
-  // Try configured URL first
   try {
     return await tryAnalyze(apiUrl)
   } catch (error) {
-    // If configured URL fails and it's not localhost, try localhost
     if (apiUrl !== FALLBACK_URL) {
       console.warn(`API failed at ${apiUrl}, trying ${FALLBACK_URL}`)
       return await tryAnalyze(FALLBACK_URL)

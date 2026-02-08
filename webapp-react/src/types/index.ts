@@ -34,9 +34,3 @@ export interface AppState {
   showCropper: boolean
   showWebcam: boolean
 }
-
-export interface TierConfig {
-  low: string
-  moderate: string
-  high: string
-}

@@ -4,12 +4,11 @@ Includes realistic field condition augmentations for smartphone-captured images,
 as would be encountered when deployed by non-specialist technicians in the field.
 """
 
-Development notes:
-- Developed with AI assistance (Claude/Anthropic)
-- Albumentations pipeline structure following: https://albumentations.ai/docs/
-- Field condition augmentation strategy from domain expertise
-- Code simplified using Anthropic's code-simplifier agent
-
+# Development notes:
+# - Developed with AI assistance (Claude/Anthropic)
+# - Albumentations pipeline structure following: https://albumentations.ai/docs/
+# - Field condition augmentation strategy from domain expertise
+# - Code simplified using Anthropic's code-simplifier agent
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2

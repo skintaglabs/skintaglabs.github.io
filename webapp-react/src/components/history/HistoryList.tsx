@@ -66,16 +66,14 @@ export function HistoryList({ onViewEntry }: HistoryListProps) {
         <h2 className="text-[24px] font-semibold" style={{ fontFamily: "'Instrument Serif', serif" }}>
           Analysis History
         </h2>
-        {history.length > 0 && (
-          <Button
-            onClick={() => setShowConfirmClear(true)}
-            variant="ghost"
-            size="sm"
-            className="text-[var(--color-red)]"
-          >
-            Clear All
-          </Button>
-        )}
+        <Button
+          onClick={() => setShowConfirmClear(true)}
+          variant="ghost"
+          size="sm"
+          className="text-[var(--color-red)]"
+        >
+          Clear All
+        </Button>
       </div>
 
       {showConfirmClear && (

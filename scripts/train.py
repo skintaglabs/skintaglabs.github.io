@@ -1,10 +1,9 @@
 """Training script for skin lesion classifier — supports multi-dataset and 3 model types."""
 
-Development notes:
-- Developed with AI assistance (Claude/Anthropic) for implementation and refinement
-- Code simplified using Anthropic's code-simplifier agent (https://www.anthropic.com/claude-code)
-- Core architecture and domain logic by SkinTag team
-
+# Development notes:
+# - Developed with AI assistance (Claude/Anthropic) for implementation and refinement
+# - Code simplified using Anthropic's code-simplifier agent (https://www.anthropic.com/claude-code)
+# - Core architecture and domain logic by SkinTag team
 
 import sys
 from pathlib import Path

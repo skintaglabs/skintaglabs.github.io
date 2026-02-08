@@ -1,13 +1,3 @@
-/**
- * Real-time webcam capture with MediaPipe hand detection and image quality validation.
- * Provides live feedback on distance, lighting, and hand positioning.
- *
- * Development notes:
- * - Developed with AI assistance (Claude/Anthropic)
- * - MediaPipe hand detection: https://developers.google.com/mediapipe/solutions/vision/hand_landmarker
- * - getUserMedia API usage following MDN Web API documentation
- */
-
 import { useEffect, useRef, useState } from 'react'
 import { Camera, X, AlertCircle, CheckCircle } from 'lucide-react'
 import { useRealtimeValidation } from '@/hooks/useRealtimeValidation'
@@ -117,42 +107,24 @@ export function WebcamCapture({ onCapture, onClose }: WebcamCaptureProps) {
     const video = videoRef.current
     const canvas = document.createElement('canvas')
 
-    // Calculate circle area in video coordinates
     const displayWidth = video.clientWidth
     const displayHeight = video.clientHeight
-
-    // Circle is 256px (16rem) in the center of the display
     const circleSize = 256
     const circleRadius = circleSize / 2
 
-    // Convert circle position from display to video coordinates
     const scaleX = video.videoWidth / displayWidth
     const scaleY = video.videoHeight / displayHeight
-
-    // Center position in video coordinates
     const centerX = video.videoWidth / 2
     const centerY = video.videoHeight / 2
-
-    // Radius in video coordinates (use smaller scale to ensure it fits)
     const radiusInVideo = circleRadius * Math.min(scaleX, scaleY)
-
-    // Crop to square that fits in circle
     const cropSize = radiusInVideo * 2
     const cropX = centerX - radiusInVideo
     const cropY = centerY - radiusInVideo
 
-    // Set canvas to crop size
     canvas.width = cropSize
     canvas.height = cropSize
-
     const ctx = canvas.getContext('2d')!
-
-    // Draw cropped area
-    ctx.drawImage(
-      video,
-      cropX, cropY, cropSize, cropSize,  // Source rectangle
-      0, 0, cropSize, cropSize            // Destination rectangle
-    )
+    ctx.drawImage(video, cropX, cropY, cropSize, cropSize, 0, 0, cropSize, cropSize)
 
     canvas.toBlob((blob) => {
       if (blob) {
@@ -168,19 +140,20 @@ export function WebcamCapture({ onCapture, onClose }: WebcamCaptureProps) {
     onClose()
   }
 
-  const statusColor = metrics.readyToCapture
-    ? 'text-green-500'
-    : metrics.distance === 'too_far' || metrics.distance === 'too_close'
-    ? 'text-yellow-500'
-    : 'text-gray-400'
-
-  const StatusIcon = metrics.readyToCapture ? CheckCircle : AlertCircle
+  function getStatusColor(): string {
+    if (metrics.readyToCapture) return 'text-green-500'
+    if (metrics.distance === 'too_far' || metrics.distance === 'too_close') return 'text-yellow-500'
+    return 'text-gray-400'
+  }
 
   function getGuideColor(): string {
     if (metrics.readyToCapture) return 'border-green-500'
     if (metrics.distance === 'good') return 'border-yellow-500'
     return 'border-white/30'
   }
+
+  const statusColor = getStatusColor()
+  const StatusIcon = metrics.readyToCapture ? CheckCircle : AlertCircle
 
   return (
     <>

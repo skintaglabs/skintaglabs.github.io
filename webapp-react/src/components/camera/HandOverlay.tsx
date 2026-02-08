@@ -16,14 +16,10 @@ export function HandOverlay({ videoElement, landmarks, state }: HandOverlayProps
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')!
 
-    // Match canvas size to video
     canvas.width = videoElement.videoWidth
     canvas.height = videoElement.videoHeight
-
-    // Clear previous frame
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-    // Get color based on state - softer colors
     const getColors = () => {
       switch (state) {
         case 'too_far':
@@ -56,7 +52,6 @@ export function HandOverlay({ videoElement, landmarks, state }: HandOverlayProps
     const colors = getColors()
 
     landmarks.forEach((handLandmarks) => {
-      // Calculate bounding box
       const xs = handLandmarks.map(l => l.x * canvas.width)
       const ys = handLandmarks.map(l => l.y * canvas.height)
       const minX = Math.min(...xs)
@@ -70,41 +65,31 @@ export function HandOverlay({ videoElement, landmarks, state }: HandOverlayProps
       const width = (maxX - minX) + padding * 2
       const height = (maxY - minY) + padding * 2
 
-      // Draw soft glow
       ctx.shadowBlur = 20
       ctx.shadowColor = colors.glow
-
-      // Draw filled semi-transparent box
       ctx.fillStyle = colors.fill
       ctx.fillRect(x, y, width, height)
-
-      // Draw border
       ctx.strokeStyle = colors.stroke
       ctx.lineWidth = 3
       ctx.strokeRect(x, y, width, height)
-
-      // Reset shadow
       ctx.shadowBlur = 0
 
-      // Draw subtle outline connecting landmarks (fewer lines, cleaner)
       ctx.strokeStyle = colors.stroke
       ctx.lineWidth = 2
       ctx.globalAlpha = 0.4
 
-      // Just draw hand outline, not all internal connections
       const outline = [
-        // Outer contour only
-        handLandmarks[0],  // Wrist
-        handLandmarks[5],  // Index base
-        handLandmarks[9],  // Middle base
-        handLandmarks[13], // Ring base
-        handLandmarks[17], // Pinky base
-        handLandmarks[20], // Pinky tip
-        handLandmarks[16], // Ring tip
-        handLandmarks[12], // Middle tip
-        handLandmarks[8],  // Index tip
-        handLandmarks[4],  // Thumb tip
-        handLandmarks[0]   // Back to wrist
+        handLandmarks[0],
+        handLandmarks[5],
+        handLandmarks[9],
+        handLandmarks[13],
+        handLandmarks[17],
+        handLandmarks[20],
+        handLandmarks[16],
+        handLandmarks[12],
+        handLandmarks[8],
+        handLandmarks[4],
+        handLandmarks[0]
       ]
 
       ctx.beginPath()
