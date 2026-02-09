@@ -4,11 +4,10 @@ Provides upload endpoint for skin lesion images, runs SigLIP embedding +
 classifier inference, and returns triage assessment results.
 """
 
-Development notes:
-- Developed with AI assistance (Claude/Anthropic) for implementation and refinement
-- Code simplified using Anthropic's code-simplifier agent (https://www.anthropic.com/claude-code)
-- Core architecture and domain logic by SkinTag team
-
+# Development notes:
+# - Developed with AI assistance (Claude/Anthropic) for implementation and refinement
+# - Code simplified using Anthropic's code-simplifier agent (https://www.anthropic.com/claude-code)
+# - Core architecture and domain logic by SkinTag team
 
 import os
 import sys
