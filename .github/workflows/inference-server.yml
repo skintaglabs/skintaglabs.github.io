@@ -1,0 +1,261 @@
+name: Inference Server
+
+on:
+  workflow_dispatch:
+    inputs:
+      duration_hours:
+        description: 'Duration in hours (max 5.5)'
+        required: false
+        default: '5'
+        type: string
+      auto_restart:
+        description: 'Auto-restart before timeout'
+        required: false
+        default: true
+        type: boolean
+
+  repository_dispatch:
+    types: [restart-deploy]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    permissions:
+      actions: write
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get first commit hash
+        id: first_commit
+        run: |
+          FIRST_COMMIT=$(git rev-list --max-parents=0 HEAD)
+          echo "hash=$FIRST_COMMIT" >> $GITHUB_OUTPUT
+
+      - name: Cancel previous run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PREVIOUS_RUN_ID=$(curl -s \
+            -H "Authorization: token $GH_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/inference-server.yml/runs?status=in_progress" \
+            | jq -r ".workflow_runs[] | select(.id < ${{ github.run_id }}) | .id" | head -1)
+
+          if [ -n "$PREVIOUS_RUN_ID" ] && [ "$PREVIOUS_RUN_ID" != "null" ]; then
+            echo "Cancelling previous run: $PREVIOUS_RUN_ID"
+            curl -s -X POST \
+              -H "Authorization: token $GH_TOKEN" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/${{ github.repository }}/actions/runs/$PREVIOUS_RUN_ID/cancel"
+            sleep 5
+          fi
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('requirements-inference.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      - name: Install dependencies
+        run: |
+          uv pip install --system -r requirements-inference.txt
+
+      - name: Download models from Hugging Face
+        env:
+          USE_HF_MODELS: true
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_REPO_ID: ${{ secrets.HF_REPO_ID || 'skintaglabs/siglip-skin-lesion-classifier' }}
+          HF_REVISION: v2-field-augmented
+        run: |
+          python << 'PYEOF'
+          from src.utils.model_hub import download_e2e_model_from_hf, download_model_from_hf, get_model_config
+          import os
+
+          print('Downloading models from Hugging Face...')
+          config = get_model_config()
+          repo_id = config['repo_id']
+
+          # Download end-to-end model
+          try:
+              model_dir = download_e2e_model_from_hf(repo_id=repo_id, cache_subdir='skintag')
+              print(f'Downloaded e2e model to {model_dir}')
+          except Exception as e:
+              print(f'E2E model download failed: {e}')
+              try:
+                  clf_path = download_model_from_hf(repo_id=repo_id, filename=config['classifier_filename'], cache_subdir='skintag')
+                  print(f'Downloaded classifier to {clf_path}')
+              except Exception as e2:
+                  print(f'Classifier download failed: {e2}')
+
+          # Download condition classifier
+          try:
+              cond_path = download_model_from_hf(repo_id=repo_id, filename=config['condition_classifier_filename'], cache_subdir='skintag')
+              print(f'Downloaded condition classifier to {cond_path}')
+          except Exception as e:
+              print(f'Warning: Condition classifier download failed: {e}')
+
+          print('Models downloaded successfully')
+          PYEOF
+
+      - name: Setup Cloudflare Tunnel
+        run: |
+          curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o cloudflared
+          chmod +x cloudflared
+
+      - name: Start inference server
+        env:
+          USE_HF_MODELS: true
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_REPO_ID: ${{ secrets.HF_REPO_ID || 'skintaglabs/siglip-skin-lesion-classifier' }}
+          HF_REVISION: v2-field-augmented
+        run: |
+          nohup python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > server.log 2>&1 &
+          echo $! > server.pid
+
+          echo "Waiting for inference server..."
+          for i in {1..60}; do
+            if curl -sf http://localhost:8000/api/health | grep -q "ok"; then
+              echo "Server ready"
+              break
+            fi
+            echo "Attempt $i/60 - waiting..."
+            sleep 5
+          done
+
+      - name: Start tunnel
+        run: |
+          ./cloudflared tunnel --url http://localhost:8000 2>&1 | tee tunnel.log &
+
+          echo "Waiting for tunnel URL..."
+          TUNNEL_URL=""
+          for i in {1..60}; do
+            TUNNEL_URL=$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' tunnel.log 2>/dev/null | head -1)
+
+            if [ -n "$TUNNEL_URL" ]; then
+              echo "Tunnel connected"
+              break
+            fi
+
+            echo "Attempt $i/60 - waiting..."
+            sleep 3
+          done
+
+          if [ -z "$TUNNEL_URL" ]; then
+            echo "::error::Could not extract tunnel URL after 3 minutes"
+            cat tunnel.log
+            exit 1
+          fi
+
+          echo "TUNNEL_URL=$TUNNEL_URL" >> $GITHUB_ENV
+          echo "Tunnel URL: $TUNNEL_URL"
+
+      - name: Store API URL in git notes
+        if: env.TUNNEL_URL != ''
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin refs/notes/commits:refs/notes/commits || true
+          git notes add -f -m "${{ env.TUNNEL_URL }}" ${{ steps.first_commit.outputs.hash }}
+          git push origin refs/notes/commits
+
+      - name: Trigger frontend deployment
+        if: env.TUNNEL_URL != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run deploy-webapp.yml \
+            --raw-field api_url="${{ env.TUNNEL_URL }}"
+
+      - name: Monitor
+        env:
+          RESTART_TOKEN: ${{ secrets.WORKFLOW_PAT }}
+          HF_REVISION: v2-field-augmented
+        run: |
+          DURATION_HOURS="${{ github.event.client_payload.duration_hours || github.event.inputs.duration_hours || '5' }}"
+          DURATION=$(awk "BEGIN {printf \"%.0f\", $DURATION_HOURS * 3600}")
+          RESTART_THRESHOLD=$((DURATION - 360))
+          START_TIME=$(date +%s)
+          RESTART_TRIGGERED=false
+
+          AUTO_RESTART="${{ github.event.client_payload.auto_restart || github.event.inputs.auto_restart }}"
+          if [ -z "$AUTO_RESTART" ]; then
+            AUTO_RESTART="true"
+          fi
+
+          echo "Duration: ${DURATION_HOURS}h (${DURATION}s) | Restart at: ${RESTART_THRESHOLD}s | Auto-restart: $AUTO_RESTART | Token set: $([ -n "$RESTART_TOKEN" ] && echo yes || echo no)"
+
+          while true; do
+            ELAPSED=$(($(date +%s) - START_TIME))
+            REMAINING=$((DURATION - ELAPSED))
+
+            SERVER_PID=$(cat server.pid 2>/dev/null || echo "")
+            if [ -n "$SERVER_PID" ] && kill -0 $SERVER_PID 2>/dev/null; then
+              SERVER_STATUS="running"
+            else
+              SERVER_STATUS="stopped"
+            fi
+
+            printf "[%s] Server: %s | %dm elapsed | %dm remaining\n" \
+              "$(date '+%H:%M:%S')" "$SERVER_STATUS" "$((ELAPSED/60))" "$((REMAINING/60))"
+
+            if [ "$SERVER_STATUS" != "running" ]; then
+              echo "Server died, restarting..."
+              USE_HF_MODELS=true HF_REVISION=v2-field-augmented python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > server.log 2>&1 &
+              echo $! > server.pid
+            fi
+
+            if [ "$ELAPSED" -gt "$RESTART_THRESHOLD" ] && [ "$RESTART_TRIGGERED" = "false" ]; then
+              if [ "$AUTO_RESTART" = "true" ] && [ -n "$RESTART_TOKEN" ]; then
+                echo "Triggering restart via repository_dispatch..."
+
+                RESPONSE=$(curl -sX POST \
+                  -H "Accept: application/vnd.github+json" \
+                  -H "Authorization: Bearer $RESTART_TOKEN" \
+                  "https://api.github.com/repos/${{ github.repository }}/dispatches" \
+                  -d "{\"event_type\":\"restart-deploy\",\"client_payload\":{\"duration_hours\":\"$DURATION_HOURS\",\"auto_restart\":true}}" \
+                  -w "\nHTTP_STATUS:%{http_code}" 2>&1)
+
+                HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
+
+                if [ "$HTTP_CODE" = "204" ]; then
+                  echo "Restart triggered"
+                  sleep 60
+                else
+                  echo "Failed to trigger restart (HTTP $HTTP_CODE)"
+                  echo "$RESPONSE"
+                fi
+
+                RESTART_TRIGGERED=true
+              fi
+            fi
+
+            [ "$ELAPSED" -gt "$DURATION" ] && break
+            sleep 30
+          done
+
+          # Cleanup
+          kill $(cat server.pid) 2>/dev/null || true
+          git fetch origin refs/notes/commits:refs/notes/commits 2>/dev/null || true
+          FIRST_COMMIT=$(git rev-list --max-parents=0 HEAD)
+          git notes remove $FIRST_COMMIT 2>/dev/null || true
+          git push origin refs/notes/commits 2>/dev/null || true
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          cat server.log | tail -100
