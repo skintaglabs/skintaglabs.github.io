@@ -1,23 +1,23 @@
-## Code
+# SkinTag
 
-- Delete unused code (imports, variables, functions, props, files)
-- No abstractions for single use
-- No handling for impossible errors
-- Minimal and direct solutions
-- Consolidate duplicate code immediately
-- Replace multiple similar functions with configuration objects
-- Remove trailing whitespace and excess blank lines
-- Prefer direct solutions over complex patterns
-- Simplify conditional logic where possible
-- After making significant code changes, run @agent-code-simplifier:code-simplifier to identify and remove cruft
+AI-powered skin lesion triage. SigLIP fine-tune (Python) + React webapp.
 
-## CSS
+## Commands
 
-- Never use `@import` (breaks cache-busting)
-- Individual `<link>` tags with `?v={{ hash }}`
+- `make venv` — create venv + install deps
+- `make app` — start inference API server (port 8000)
+- `make preview` — start React dev server
+- `make train` — train logistic regression on HAM10000
+- `make train-all` — train all 3 models (baseline, logistic, deep)
+- `make evaluate` — fairness evaluation on test set
+- `make data` — download HAM10000 from Kaggle
+- `make pipeline` — full pipeline: data → embed → train → eval
 
-## Documentation
+## Architecture
 
-- Professional, concise, no emojis
-- Only docs integral to system
-- Script output may use functional emojis
+`backend/` — Python inference API
+`webapp-react/` — React frontend
+`src/` — model training and evaluation
+`models/` — saved checkpoints
+`configs/` — training hyperparameters
+`scripts/` — data prep and utilities
