@@ -1,3 +1,13 @@
+---
+title: SkinTag Inference
+emoji: 🏥
+colorFrom: red
+colorTo: purple
+sdk: docker
+app_port: 8000
+pinned: false
+---
+
 # SkinTag
 
 AI-powered skin lesion triage for early melanoma detection, designed for equitable healthcare access.
@@ -114,18 +124,48 @@ cd results/cache/finetuned_model
 huggingface-cli upload YourOrg/YourModel . --repo-type model
 ```
 
-## Deployment Options
+## Deployment
 
-1. **Docker**
-   ```bash
-   docker build -t skintag .
-   docker run -p 8000:8000 skintag
-   ```
+| Layer | Service | Notes |
+|-------|---------|-------|
+| Inference backend | [Hugging Face Spaces](https://huggingface.co/spaces) (Docker SDK) | `app_port: 8000`, free tier |
+| Frontend | [GitHub Pages](https://pages.github.com) | Auto-deployed via `deploy-webapp.yml` on push to `main` |
 
-2. **Local**
-   ```bash
-   make app
-   ```
+### Backend: Hugging Face Spaces
+
+The `README.md` already contains the Space YAML frontmatter required by HF (`sdk: docker`, `app_port: 8000`).
+
+1. Create a new Space under the `skintaglabs` org (Docker SDK) and push this repo to it
+2. In the Space **Settings → Variables and secrets**, add:
+   - `USE_HF_MODELS` = `true`
+   - `HF_TOKEN` = your HF token (only needed if the model repo is private)
+   - `HF_REPO_ID` = `skintaglabs/siglip-skin-lesion-classifier` (or override)
+3. The Space builds from the `Dockerfile` and starts the FastAPI server on port 8000
+
+### Frontend: GitHub Pages + pointing at the Space
+
+The frontend is deployed automatically by `deploy-webapp.yml` on push to `main`. To point it at the HF Space backend:
+
+1. In this repo's **Settings → Secrets and variables → Actions**, add:
+   - `API_URL` = `https://skintaglabs-skintag-inference.hf.space` (your Space URL)
+2. Re-run the `Deploy Frontend` workflow (or push any change to `webapp-react/`)
+
+The workflow already reads `secrets.API_URL` as a fallback when no manual URL is provided.
+
+### Local development
+
+```bash
+make venv    # Create venv + install deps
+make app     # FastAPI at http://localhost:8000
+make preview # React dev server
+```
+
+### Docker (self-hosted)
+
+```bash
+docker build -t skintag .
+docker run -p 8000:8000 -e USE_HF_MODELS=true -e HF_TOKEN=your_token skintag
+```
 
 ## Citation
 
