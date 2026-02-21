@@ -37,7 +37,7 @@ app = FastAPI(title="SkinTag", description="AI-powered skin lesion triage screen
 # Enable CORS for GitHub Pages and local development
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"https://.*\.github\.io|http://localhost:\d+|http://127\.0\.0\.1:\d+",
+    allow_origin_regex=r"https://.*\.github\.io|https://.*\.hf\.space|http://localhost:\d+|http://127\.0\.0\.1:\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
