@@ -39,7 +39,7 @@ export function RiskDisplay({ score, tier }: RiskDisplayProps) {
       </div>
       <div className="h-2 bg-[var(--color-surface-alt)] rounded-full overflow-hidden">
         <div
-          className="h-full transition-all duration-[1000ms]"
+          className="h-full transition-[width] duration-[1000ms]"
           style={{
             width: `${animatedScore}%`,
             backgroundColor: color,

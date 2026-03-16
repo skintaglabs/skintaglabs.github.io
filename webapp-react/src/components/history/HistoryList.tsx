@@ -102,7 +102,7 @@ export function HistoryList({ onViewEntry }: HistoryListProps) {
         {history.map((entry) => (
           <div
             key={entry.id}
-            className="overflow-hidden cursor-pointer hover:shadow-[var(--shadow-lg)] transition-all rounded-[var(--radius-lg)] bg-[var(--color-surface)] border"
+            className="overflow-hidden cursor-pointer hover:shadow-[var(--shadow-lg)] transition-shadow rounded-[var(--radius-lg)] bg-[var(--color-surface)] border"
             onClick={() => onViewEntry(entry)}
           >
             <div className="flex gap-4 p-4">

@@ -85,7 +85,7 @@ export function TriageCategoryCard({ categories }: TriageCategoryCardProps) {
               </div>
               <div className="h-3 bg-[var(--color-surface-alt)] rounded-full overflow-hidden">
                 <div
-                  className="h-full rounded-full transition-all duration-[1000ms]"
+                  className="h-full rounded-full transition-[width] duration-[1000ms]"
                   style={{
                     width: `${pct}%`,
                     backgroundColor: config.color,

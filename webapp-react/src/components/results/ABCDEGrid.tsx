@@ -14,7 +14,7 @@ export function ABCDEGrid() {
         {warningSign.map(({ letter, word, hint }) => (
           <div
             key={letter}
-            className="bg-[var(--color-surface)] border rounded-[var(--radius)] p-3 sm:p-4 transition-all hover:shadow-[var(--shadow)] hover:-translate-y-0.5 cursor-default"
+            className="bg-[var(--color-surface)] border rounded-[var(--radius)] p-3 sm:p-4 transition-[box-shadow,transform] hover:shadow-[var(--shadow)] hover:-translate-y-0.5 cursor-default"
           >
             <div
               className="text-[28px] sm:text-[32px] leading-none font-semibold mb-1.5 sm:mb-2"

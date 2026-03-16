@@ -51,7 +51,7 @@ export function UploadZone({ onFileSelect }: UploadZoneProps) {
       onDragLeave={handleDragLeave}
       className={`
         relative border-2 border-dashed rounded-[var(--radius-lg)] p-12
-        transition-all duration-[var(--duration-normal)]
+        transition-[border-color,background-color,transform] duration-[var(--duration-normal)]
         ${isDragOver
           ? 'border-[var(--color-accent-warm)] bg-[var(--color-surface-alt)] scale-[1.02] drag-over-pulse'
           : 'border-[var(--color-border)] bg-[var(--color-surface)]'

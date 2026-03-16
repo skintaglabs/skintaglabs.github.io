@@ -12,7 +12,7 @@ export function BottomNav({ currentView, onNavigate, onCameraClick }: BottomNavP
       <div className="relative flex items-center justify-around max-w-3xl mx-auto h-20">
         <button
           onClick={() => onNavigate('upload')}
-          className={`flex flex-col items-center justify-center gap-1 min-w-[64px] transition-all active:scale-95 ${
+          className={`flex flex-col items-center justify-center gap-1 min-w-[64px] transition-[color,transform] active:scale-95 ${
             currentView === 'upload'
               ? 'text-[var(--color-accent-warm)]'
               : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
@@ -33,7 +33,7 @@ export function BottomNav({ currentView, onNavigate, onCameraClick }: BottomNavP
 
         <button
           onClick={() => onNavigate('history')}
-          className={`flex flex-col items-center justify-center gap-1 min-w-[64px] transition-all active:scale-95 ${
+          className={`flex flex-col items-center justify-center gap-1 min-w-[64px] transition-[color,transform] active:scale-95 ${
             currentView === 'history'
               ? 'text-[var(--color-accent-warm)]'
               : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'

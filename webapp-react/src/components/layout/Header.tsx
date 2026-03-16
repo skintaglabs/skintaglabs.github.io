@@ -12,7 +12,7 @@ export function Header() {
     <>
       <button
         onClick={() => setShowInfo(true)}
-        className="fixed top-4 left-4 z-50 w-10 h-10 rounded-full hover:bg-[var(--color-surface-alt)] flex items-center justify-center transition-all text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+        className="fixed top-4 left-4 z-50 w-10 h-10 rounded-full hover:bg-[var(--color-surface-alt)] flex items-center justify-center transition-[background-color,color] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
         aria-label="About SkinTag"
       >
         <Info className="w-5 h-5" />

@@ -60,7 +60,7 @@ export function ConditionCard({ topCondition, conditions }: ConditionCardProps) 
             </div>
             <div className="h-2 bg-[var(--color-surface-alt)] rounded-full overflow-hidden">
               <div
-                className="h-full bg-[var(--color-accent-warm)] transition-all duration-[1000ms]"
+                className="h-full bg-[var(--color-accent-warm)] transition-[width] duration-[1000ms]"
                 style={{
                   width: `${animatedBars[index] || 0}%`,
                   transitionTimingFunction: 'var(--ease-spring)'

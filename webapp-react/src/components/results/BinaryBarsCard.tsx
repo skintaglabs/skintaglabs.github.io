@@ -31,7 +31,7 @@ export function BinaryBarsCard({ benign, malignant }: BinaryBarsCardProps) {
           </div>
           <div className="h-3 bg-[var(--color-surface-alt)] rounded-full overflow-hidden">
             <div
-              className="h-full bg-[var(--color-green)] transition-all duration-[1000ms]"
+              className="h-full bg-[var(--color-green)] transition-[width] duration-[1000ms]"
               style={{
                 width: `${animatedBenign}%`,
                 transitionTimingFunction: 'var(--ease-spring)'
@@ -49,7 +49,7 @@ export function BinaryBarsCard({ benign, malignant }: BinaryBarsCardProps) {
           </div>
           <div className="h-3 bg-[var(--color-surface-alt)] rounded-full overflow-hidden">
             <div
-              className="h-full bg-[var(--color-red)] transition-all duration-[1000ms]"
+              className="h-full bg-[var(--color-red)] transition-[width] duration-[1000ms]"
               style={{
                 width: `${animatedMalignant}%`,
                 transitionTimingFunction: 'var(--ease-spring)'

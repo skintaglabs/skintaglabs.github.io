@@ -78,7 +78,7 @@ export function OnboardingModal() {
           {tips.map((_, index) => (
             <div
               key={index}
-              className={`h-1.5 rounded-full transition-all ${
+              className={`h-1.5 rounded-full transition-[width,background-color] ${
                 index === currentStep
                   ? 'w-8 bg-[var(--color-accent-warm)]'
                   : 'w-1.5 bg-[var(--color-border)]'
