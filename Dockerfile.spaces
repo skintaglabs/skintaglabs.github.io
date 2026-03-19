@@ -1,0 +1,48 @@
+FROM python:3.11-slim
+
+# System dependencies (runs as root before user switch)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 libglib2.0-0 && \
+    rm -rf /var/lib/apt/lists/*
+
+# HF Spaces runs containers as UID 1000
+RUN useradd -m -u 1000 user
+
+USER user
+ENV HOME=/home/user \
+    PATH=/home/user/.local/bin:$PATH \
+    HF_HOME=/home/user/.cache/huggingface
+
+WORKDIR /home/user/app
+
+# Python dependencies (inference-only subset — no training/eval deps)
+COPY --chown=user requirements-inference.txt .
+RUN pip install --no-cache-dir --user -r requirements-inference.txt
+
+# Application code
+COPY --chown=user src/ src/
+COPY --chown=user app/ app/
+COPY --chown=user configs/ configs/
+
+# Pre-bake SigLIP base model weights (~3.5 GB) so cold starts don't re-download
+RUN python -c "\
+from transformers import AutoModel, AutoImageProcessor; \
+m = 'google/siglip-so400m-patch14-384'; \
+AutoImageProcessor.from_pretrained(m); \
+AutoModel.from_pretrained(m); \
+print('SigLIP cached')"
+
+# Download classifier .pkl files directly into results/cache/ so startup loads
+# them from the local filesystem (no HF Hub cache lookup at runtime)
+RUN mkdir -p results/cache && python -c "\
+from huggingface_hub import hf_hub_download; \
+import shutil, os; \
+repo = 'skintaglabs/siglip-skin-lesion-classifier'; \
+shutil.copy(hf_hub_download(repo, 'Misc/classifier_deep_mlp.pkl'), 'results/cache/classifier_deep_mlp.pkl'); \
+shutil.copy(hf_hub_download(repo, 'Misc/xgboost_finetuned_condition.pkl'), 'results/cache/classifier_condition.pkl'); \
+print('Classifiers ready at results/cache/')"
+
+ENV USE_HF_MODELS=false
+
+EXPOSE 7860
+CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7860"]

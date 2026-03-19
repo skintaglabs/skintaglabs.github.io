@@ -1,0 +1,61 @@
+name: Deploy Backend to HF Spaces
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'src/**'
+      - 'configs/**'
+      - 'Dockerfile.spaces'
+      - 'requirements-inference.txt'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Push to Hugging Face Spaces
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+
+          # Clone the HF Space
+          git clone https://skintaglabs:$HF_TOKEN@huggingface.co/spaces/skintaglabs/skintag /tmp/hf-space
+
+          # Sync backend files (exclude templates — frontend lives on GitHub Pages)
+          rsync -a --delete --exclude='templates/' app/      /tmp/hf-space/app/
+          rsync -a --delete src/      /tmp/hf-space/src/
+          rsync -a --delete configs/  /tmp/hf-space/configs/
+          cp Dockerfile.spaces        /tmp/hf-space/Dockerfile
+          cp requirements-inference.txt /tmp/hf-space/
+
+          # Write HF Space README (frontmatter configures the Space)
+          cat > /tmp/hf-space/README.md << 'EOF'
+---
+title: SkinTag
+emoji: 🔬
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+pinned: false
+---
+
+FastAPI backend for [SkinTag](https://skintaglabs.github.io) - AI-powered skin lesion triage.
+EOF
+
+          # Commit and push if anything changed
+          cd /tmp/hf-space
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to deploy"
+          else
+            git commit -m "Deploy from skintaglabs/skintaglabs.github.io@${{ github.sha }}"
+            git push
+          fi

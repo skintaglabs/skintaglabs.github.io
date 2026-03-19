@@ -21,6 +21,32 @@ sys.path.insert(0, str(PROJECT_ROOT))
 import io
 import pickle
 import yaml
+
+
+class CPUUnpickler(pickle.Unpickler):
+    """Unpickler that remaps CUDA tensors to CPU.
+
+    Classifiers trained on GPU serialize CUDA storage references. This
+    intercepts torch.storage._load_from_bytes and adds map_location='cpu'.
+    """
+    def find_class(self, module, name):
+        if module == "torch.storage" and name == "_load_from_bytes":
+            return lambda b: torch.load(io.BytesIO(b), map_location="cpu", weights_only=False)
+        return super().find_class(module, name)
+
+
+def _load_classifier(path):
+    """Load a pickled classifier, remapping any CUDA state to CPU."""
+    with open(path, "rb") as f:
+        clf = CPUUnpickler(f).load()
+    # CPUUnpickler remaps tensor storage but leaves string device attributes intact.
+    # Reset them so predict_proba doesn't try to push inputs to a missing GPU.
+    obj = clf.get("classifier", clf) if isinstance(clf, dict) else clf
+    if hasattr(obj, "device"):
+        obj.device = "cpu"
+    if hasattr(obj, "model") and hasattr(obj.model, "to"):
+        obj.model.to("cpu")
+    return clf
 import torch
 import numpy as np
 from PIL import Image
@@ -70,6 +96,8 @@ async def load_models():
     cache_dir = PROJECT_ROOT / "results" / "cache"
     device = "cuda" if torch.cuda.is_available() else "cpu"
     use_hf = os.getenv("USE_HF_MODELS", "false").lower() in ("true", "1", "yes")
+    # Skip the 3.5 GB e2e model download (e.g. on CPU-only deployments where cold-start time matters)
+    force_embedding_head = os.getenv("FORCE_EMBEDDING_HEAD", "false").lower() in ("true", "1", "yes")
 
     # Download from Hugging Face if enabled
     if use_hf:
@@ -80,20 +108,23 @@ async def load_models():
             revision = model_config.get("revision")
 
             # Try loading fine-tuned end-to-end model first (best accuracy)
-            try:
-                from src.model.deep_classifier import EndToEndClassifier
-                model_dir = download_e2e_model_from_hf(
-                    repo_id=repo_id,
-                    revision=revision,
-                    cache_subdir="skintag"
-                )
-                _state["e2e_model"] = EndToEndClassifier.load_for_inference(str(model_dir), device=device)
-                _state["inference_mode"] = "e2e"
-                print(f"✓ Loaded fine-tuned model from HF: {repo_id} (device={device})")
+            # Skipped when FORCE_EMBEDDING_HEAD=true to avoid downloading the 3.5 GB model_state.pt
+            if not force_embedding_head:
+                try:
+                    from src.model.deep_classifier import EndToEndClassifier
+                    model_dir = download_e2e_model_from_hf(
+                        repo_id=repo_id,
+                        revision=revision,
+                        cache_subdir="skintag"
+                    )
+                    _state["e2e_model"] = EndToEndClassifier.load_for_inference(str(model_dir), device=device)
+                    _state["inference_mode"] = "e2e"
+                    print(f"✓ Loaded fine-tuned model from HF: {repo_id} (device={device})")
 
-            except Exception as e:
-                print(f"E2E model not available, trying classifier files: {e}")
+                except Exception as e:
+                    print(f"E2E model not available, trying classifier files: {e}")
 
+            if _state["inference_mode"] is None:
                 # Fall back to embedding extractor + classifier head
                 classifier_path = download_model_from_hf(
                     repo_id=repo_id,
@@ -101,8 +132,7 @@ async def load_models():
                     revision=revision,
                     cache_subdir="skintag"
                 )
-                with open(classifier_path, "rb") as f:
-                    _state["classifier"] = pickle.load(f)
+                _state["classifier"] = _load_classifier(classifier_path)
                 print(f"✓ Loaded classifier from HF: {classifier_path.name}")
 
                 _state["extractor"] = EmbeddingExtractor(device=device)
@@ -113,8 +143,7 @@ async def load_models():
                 for cond_name in ["xgboost_finetuned_condition.pkl", "xgboost_finetuned_binary.pkl"]:
                     misc_cond = Path(model_dir) / "Misc" / cond_name
                     if misc_cond.exists():
-                        with open(misc_cond, "rb") as f:
-                            _state["condition_classifier"] = pickle.load(f)
+                        _state["condition_classifier"] = _load_classifier(misc_cond)
                         print(f"✓ Loaded condition classifier: {misc_cond.name}")
                         break
             if _state["condition_classifier"] is None:
@@ -125,8 +154,7 @@ async def load_models():
                         revision=revision,
                         cache_subdir="skintag"
                     )
-                    with open(cond_path, "rb") as f:
-                        _state["condition_classifier"] = pickle.load(f)
+                    _state["condition_classifier"] = _load_classifier(cond_path)
                     print(f"✓ Loaded condition classifier from HF: {cond_path.name}")
                 except Exception as e:
                     print(f"Condition classifier not available: {e}")
@@ -161,8 +189,7 @@ async def load_models():
                                 "classifier_deep.pkl", "classifier_logistic.pkl", "classifier.pkl"]:
                 model_path = cache_dir / model_name
                 if model_path.exists():
-                    with open(model_path, "rb") as f:
-                        _state["classifier"] = pickle.load(f)
+                    _state["classifier"] = _load_classifier(model_path)
                     print(f"Loaded classifier: {model_name}")
                     break
 
@@ -181,8 +208,7 @@ async def load_models():
         ]
         for cond_path in cond_candidates:
             if cond_path.exists():
-                with open(cond_path, "rb") as f:
-                    _state["condition_classifier"] = pickle.load(f)
+                _state["condition_classifier"] = _load_classifier(cond_path)
                 print(f"Loaded condition classifier: {cond_path}")
                 break
         else:

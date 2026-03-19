@@ -5,6 +5,8 @@ import { API_URL } from '@/config/api'
 import { toast } from 'sonner'
 import type { AnalysisResult } from '@/types'
 
+const WARMUP_TOAST_ID = 'server-warmup'
+
 export function useAnalysis() {
   const { setIsAnalyzing, setResults } = useAppContext()
   const { isOnline } = useNetworkStatus()
@@ -22,31 +24,38 @@ export function useAnalysis() {
     }, 10000)
 
     try {
-      const result = await analyzeImage(file, API_URL)
+      const result = await analyzeImage(file, API_URL, () => {
+        clearTimeout(slowTimeout)
+        toast.loading('Server is warming up, please wait...', {
+          id: WARMUP_TOAST_ID,
+          duration: Infinity,
+        })
+      })
+
       clearTimeout(slowTimeout)
+      toast.dismiss(WARMUP_TOAST_ID)
       toast.dismiss()
       setResults(result)
       toast.success('Analysis complete', { duration: 2000 })
       return result
     } catch (error) {
       clearTimeout(slowTimeout)
+      toast.dismiss(WARMUP_TOAST_ID)
       toast.dismiss()
 
       if (error instanceof Error && error.message === 'REQUEST_TIMEOUT') {
         toast.error('Request timed out. Try a smaller image.', {
-          action: {
-            label: 'Retry',
-            onClick: () => analyze(file)
-          }
+          action: { label: 'Retry', onClick: () => analyze(file) },
+        })
+      } else if (error instanceof Error && error.message.includes('wake up')) {
+        toast.error('Server took too long to wake up.', {
+          description: 'Please try again in a moment.',
+          action: { label: 'Retry', onClick: () => analyze(file) },
         })
       } else {
-        toast.error('Unable to connect to API server', {
-          description: 'The server may have restarted. Try refreshing the page.',
-          duration: 5000,
-          action: {
-            label: 'Refresh',
-            onClick: () => window.location.reload()
-          }
+        toast.error('Analysis failed', {
+          description: error instanceof Error ? error.message : 'Unexpected error',
+          action: { label: 'Retry', onClick: () => analyze(file) },
         })
       }
       return null
